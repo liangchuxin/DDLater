@@ -1,116 +1,141 @@
-The content below is an example project proposal / requirements document. Replace the text below the lines marked "__TODO__" with details specific to your project. Remove the "TODO" lines.
-
-(___TODO__: your project name_)
-
-# Shoppy Shoperson 
+# DDLater
 
 ## Overview
 
-(___TODO__: a brief one or two paragraph, high-level description of your project_)
+Ever find yourself staring at your screen with a deadline tomorrow, nothing done yet unable to start? DDLater is a web app built around the concept of body doubling — the simple but powerful effect of having someone else present when you work.
 
-Remembering what to buy at the grocery store is waaaaay too difficult. Also, shopping for groceries when you're hungry leads to regrettable purchases. Sooo... that's where Shoppy Shoperson comes in!
-
-Shoppy Shoperson is a web app that will allow users to keep track of multiple grocery lists. Users can register and login. Once they're logged in, they can create or view their grocery list. For every list that they have, they can add items to the list or cross off items.
+Instead of suffering through your last-minute crunch alone, DDLater shows you what other students are working on, when their things are due, and how far along they are. Users can log their tasks and progress, join virtual study rooms with others who are currently working, and check a live procrastination index across different majors.
 
 
 ## Data Model
 
-(___TODO__: a description of your application's data and their relationships to each other_) 
+The application will store Users, Courses, Tasks, and Study Rooms.
+* a user can enroll in multiple courses (via references)
+* a task belongs to one user and optionally one course (via references)
+* a study room can have multiple members (via references to users)
+* courses are shared across users, multiple users can reference the same course
 
-The application will store Users, Lists and Items
-
-* users can have multiple lists (via references)
-* each list can have multiple items (by embedding)
-
-(___TODO__: sample documents_)
 
 An Example User:
 
 ```javascript
 {
-  username: "shannonshopper",
+  username: "celianyc",
   hash: // a password hash,
-  lists: // an array of references to List documents
+  courses: // an array of references to Course documents,
+  badges: ["submitted with 4 min to spare", "0% at midnight warrior"]
 }
 ```
 
-An Example List with Embedded Items:
+An Example Course:
 
 ```javascript
 {
-  user: // a reference to a User object
-  name: "Breakfast foods",
-  items: [
-    { name: "pancakes", quantity: "9876", checked: false},
-    { name: "ramen", quantity: "2", checked: true},
-  ],
-  createdAt: // timestamp
+  courseCode: "CSCI-UA 474",
+  courseName: "Software Engineering",
+  school: "NYU",
+  semester: "Spring",
+  year: 2026
 }
 ```
 
+An Example Task:
+```javascript
+{
+  user: // a reference to a User document,
+  course: // a reference to a Course document,
+  title: "review lecture slides",
+  description: "chapters 1-8, focus on week 10 onwards",
+  dueDate: // a timestamp,
+  progressNumerator: 3,
+  progressDenominator: 8,
+  hideFromClassmates: false
+}
+```
 
-## [Link to Commented First Draft Schema](db.js) 
+An Example Study Room:
+```javascript
+{
+  name: "finals week grind",
+  members: // an array of references to User documents,
+  createdAt: // a timestamp,
+  active: true
+}
+```
 
-(___TODO__: create a first draft of your Schemas in db.js and link to it_)
+## [Link to Commented First Draft Schema](db.mjs) 
 
 ## Wireframes
 
-(___TODO__: wireframes for all of the pages on your site; they can be as simple as photos of drawings or you can use a tool like Balsamiq, Omnigraffle, etc._)
+/feed - main feed showing everyone's tasks and live anxiety index
 
-/list/create - page for creating a new shopping list
+![feed](documentation/feed.png)
 
-![list create](documentation/list-create.png)
+/register - register and login page
 
-/list - page for showing all shopping lists
+![register](documentation/register.png)
 
-![list](documentation/list.png)
+/tasks - personal task list with progress and privacy settings
 
-/list/slug - page for showing specific shopping list
+![tasks](documentation/tasks.png)
 
-![list](documentation/list-slug.png)
+/tasks/create - form to create or edit a task
+
+![tasks-create](documentation/tasks-create.png)
+
+/rooms - list of active study rooms
+
+![rooms](documentation/rooms.png)
+
+/rooms/:id - inside a study room, see members' progress and update your own
+
+![rooms-slug](documentation/rooms-slug.png)
+
+/profile - user profile with stats, badges, and enrolled courses
+
+![profile](documentation/profile.png)
 
 ## Site map
 
-(___TODO__: draw out a site map that shows how pages are related to each other_)
-
-Here's a [complex example from wikipedia](https://upload.wikimedia.org/wikipedia/commons/2/20/Sitemap_google.jpg), but you can create one without the screenshots, drop shadows, etc. ... just names of pages and where they flow to.
+![sitemap](documentation/sitemap.png)
 
 ## User Stories or Use Cases
 
-(___TODO__: write out how your application will be used through [user stories](http://en.wikipedia.org/wiki/User_story#Format) and / or [use cases](https://www.mongodb.com/download-center?jmp=docs&_ga=1.47552679.1838903181.1489282706#previous)_)
-
-1. as non-registered user, I can register a new account with the site
+1. as a non-registered user, I can create a new account
 2. as a user, I can log in to the site
-3. as a user, I can create a new grocery list
-4. as a user, I can view all of the grocery lists I've created in a single list
-5. as a user, I can add items to an existing grocery list
-6. as a user, I can cross off items in an existing grocery list
+3. as a user, I can create a new task with a title, due date, course, and progress
+4. as a user, I can view all of my tasks in one place to track my own progress
+5. as a user, I can update the progress on a task
+6. as a user, I can set a task's visibility to hidden from classmates
+7. as a user, I can browse the main feed and see what other students are working on and how far along they are
+8. as a user, I can create or join a study room to work alongside others in real time
+9. as a user, I can view my profile to see my stats and badges
 
 ## Research Topics
 
-(___TODO__: the research topics that you're planning on working on along with their point values... and the total points of research topics listed_)
+* (5 points) User authentication with Passport.js
+  * using passport.js to handle user registration and login with hashed passwords
+  * will implement session-based authentication for protected routes
+* (4 points) Real-time study rooms with Socket.io
+  * using socket.io to enable real-time progress updates inside study rooms
+  * users will see live changes without refreshing the page
+* (3 points) React as a front-end framework
+  * using React to build the client-side UI with component-based architecture
+* (3 points) Phaser.js mini-game in study rooms
+  * using Phaser.js to build a small interactive game inside study rooms
+* (2 points) D3.js data visualization
+  * using D3.js to render the live anxiety index and progress charts on the main feed
+* (1 point) Google Calendar API
+  * allowing users to import deadlines from their Google Calendar
 
-* (5 points) Integrate user authentication
-    * I'm going to be using passport for user authentication
-    * And account has been made for testing; I'll email you the password
-    * see <code>cs.nyu.edu/~jversoza/ait-final/register</code> for register page
-    * see <code>cs.nyu.edu/~jversoza/ait-final/login</code> for login page
-* (4 points) Perform client side form validation using a JavaScript library
-    * see <code>cs.nyu.edu/~jversoza/ait-final/my-form</code>
-    * if you put in a number that's greater than 5, an error message will appear in the dom
-* (5 points) vue.js
-    * used vue.js as the frontend framework; it's a challenging library to learn, so I've assigned it 5 points
-
-10 points total out of 8 required points (___TODO__: addtional points will __not__ count for extra credit_)
+18 points total out of 10 required points
 
 
-## [Link to Initial Main Project File](app.js) 
-
-(___TODO__: create a skeleton Express application with a package.json, app.js, views folder, etc. ... and link to your initial app.js_)
+## [Link to Initial Main Project File](app.mjs) 
 
 ## Annotations / References Used
 
-(___TODO__: list any tutorials/references/etc. that you've based your code off of_)
+1. [SitePoint - Local Authentication Using Passport in Node.js](https://www.sitepoint.com/local-authentication-using-passport-node-js/) - will be referenced for passport.js setup
+2. [Socket.IO - Get Started](https://socket.io/get-started/chat) - will be referenced for real-time study room implementation
 
-1. [passport.js authentication docs](http://passportjs.org/docs) - (add link to source code that was based on this)
-2. [tutorial on vue.js](https://vuejs.org/v2/guide/) - (add link to source code that was based on this)
+(No code references used at this stage. Above might be referenced later)

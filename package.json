@@ -1,0 +1,24 @@
+{
+  "name": "final-project-liangchuxin",
+  "version": "1.0.0",
+  "description": "DDLater - see who else hasn't started yet",
+  "main": "app.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nyu-csci-ua-0467-001-002-spring-26/final-project-liangchuxin.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nyu-csci-ua-0467-001-002-spring-26/final-project-liangchuxin/issues"
+  },
+  "homepage": "https://github.com/nyu-csci-ua-0467-001-002-spring-26/final-project-liangchuxin#readme",
+  "dependencies": {
+    "express": "^5.2.1",
+    "mongoose": "^9.3.2"
+  }
+}
