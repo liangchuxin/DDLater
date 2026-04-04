@@ -6,7 +6,7 @@ export default function Navigation() {
   const { setCurrentUser } = useAuth();
 
   const handleLogout = async () => {
-    await fetch("http://localhost:3000/api/auth/logout", {
+    await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
     });

@@ -6,7 +6,7 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(undefined);
 
   useEffect(() => {
-    fetch("http://localhost:3000/api/auth/me", { credentials: "include" })
+    fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setCurrentUser(data));
   }, []);
