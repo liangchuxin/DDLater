@@ -14,6 +14,9 @@ mongoose.connect(process.env.DSN).then(() => console.log("mongodb connected"));
 
 const app = express();
 
+app.set('trust proxy', 1);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 
 // middleware
@@ -27,6 +30,12 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.DSN }),
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 天
+    },
   }),
 );
 
