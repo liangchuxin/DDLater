@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import TaskCard from './TaskCard';
-import RoomCard from './RoomCard';
-import { ROOMS, ROOM_FILTERS } from './roomsData';
 
-// ── Mock 数据（之后替换成 API）────────────────────────────────────────────────
+// TODO: 之后替换成 API 数据
 const SAMPLE_TASKS = [
   // ROW 1
   { id: 1, course: 'AIT', courseTag: 't-ait', bgClass: 'ci-1', dotStatus: 'on',
@@ -78,37 +76,38 @@ const SAMPLE_TASKS = [
     ddlText: '3d left', ddlClass: 'ddl-u' },
 ];
 
-const TASK_FILTERS = ['Everyone', 'My School', 'My Course', 'Due Today', '0% Done'];
+const FILTERS = ['Everyone', 'My School', 'My Course', 'Due Today', '0% Done'];
 
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [taskFilter, setTaskFilter]   = useState('Everyone');
-  const [roomFilter, setRoomFilter]   = useState('All Rooms');
+  const [activeFilter, setActiveFilter] = useState('Everyone');
 
   return (
     <main className="main">
       <div className="main-inner">
 
-        {/* ── What people are working on ── */}
+        {/* Filter bar */}
         <div className="sec-head">
           <div className="sec-title">What people are working on</div>
         </div>
         <div className="filter-bar">
-          {TASK_FILTERS.map((f) => (
+          {FILTERS.map((f) => (
             <button
               key={f}
-              className={`chip ${taskFilter === f ? 'on' : ''} ${f === '0% Done' ? 'warn' : ''}`}
-              onClick={() => setTaskFilter(f)}
+              className={`chip ${activeFilter === f ? 'on' : ''} ${f === '0% Done' ? 'warn' : ''}`}
+              onClick={() => setActiveFilter(f)}
             >
               {f}
             </button>
           ))}
         </div>
 
+        {/* Task grid */}
         <div className="grid">
           {SAMPLE_TASKS.map((t) => (
             <TaskCard key={t.id} {...t} />
           ))}
+
+          {/* Promo card */}
           <div className="card card-promo">
             <PixelPromo />
             <div className="promo-title">Get your<br />pixel avatar!</div>
@@ -116,53 +115,17 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ── Study Rooms ── */}
-        <div className="rooms-page">
-          <div className="sec-head">
-            <div className="sec-title">Study Rooms · join someone and get it done</div>
-          </div>
-          <div className="filter-bar">
-            {ROOM_FILTERS.map((f) => (
-              <button
-                key={f}
-                className={[
-                  'chip',
-                  roomFilter === f ? 'on' : '',
-                  f.startsWith('🔥') ? 'fire' : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => setRoomFilter(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          <div className="rooms-grid">
-            {ROOMS.map((room) => (
-              <RoomCard key={room.id} room={room} />
-            ))}
-            <div className="rcard rcard-create">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
-                style={{ color: 'var(--muted)' }}>
-                <line x1="10" y1="4" x2="10" y2="16" />
-                <line x1="4"  y1="10" x2="16" y2="10" />
-              </svg>
-              <div className="rcard-create-label">Create a room</div>
-              <div className="rcard-create-sub">Invite people working on the same thing</div>
-            </div>
-          </div>
-        </div>
+        {/* TODO: Study Rooms section */}
 
       </div>
     </main>
   );
 }
 
-// ── 绿色小人 promo ────────────────────────────────────────────────────────────
+// 绿色小人 promo
 function PixelPromo() {
   return (
-    <svg width="76" height="96" viewBox="0 0 13 17"
-      style={{ imageRendering: 'pixelated', opacity: 0.5 }}>
+    <svg width="76" height="96" viewBox="0 0 13 17" style={{ imageRendering: 'pixelated', opacity: 0.5 }}>
       <rect x="3" y="0" width="7" height="5" fill="#2D8A3E" />
       <rect x="2" y="5" width="9" height="7" fill="#4CAF62" />
       <rect x="1" y="7" width="2" height="3" fill="#4CAF62" />

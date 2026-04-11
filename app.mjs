@@ -5,7 +5,8 @@ import mongoose from "mongoose";
 import session from "express-session";
 import MongoStore from "connect-mongo";
 import "./db.mjs";
-import authRouter from "./routes/auth.mjs";
+import authRouter from './routes/auth.mjs';
+import profileRouter from './routes/profile.mjs';
 
 // 数据库连接
 
@@ -29,7 +30,8 @@ app.use(
   }),
 );
 
-app.use("/api/auth", authRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/profile', profileRouter);
 
 app.get("/api/test", (req, res) => res.json({ message: "ok" }));
 

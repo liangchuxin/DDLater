@@ -24,6 +24,7 @@
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "mongoose": "^9.4.1"
+    "mongoose": "^9.4.1",
+    "nanoid": "^5.1.7"
   }
 }

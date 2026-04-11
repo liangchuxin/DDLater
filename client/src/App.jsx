@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import "./feed.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
+import Layout from "./components/Layout";
 import Register from "./components/Register";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
@@ -8,10 +10,12 @@ import Navigation from "./components/Navigation";
 import MyTasks from "./components/MyTasks";
 import Rooms from "./components/Rooms";
 import Profile from "./components/Profile";
+import ProfileSettings from "./components/ProfileSettings";
+import Badges from "./components/Badges";
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
-  if (currentUser === undefined) return null; // loading
+  if (currentUser === undefined) return null;
   if (!currentUser) return <Navigate to="/login" />;
   return children;
 }
@@ -36,8 +40,19 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Navigation />
-                    <Dashboard />
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/badges"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Badges />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -64,8 +79,9 @@ function App() {
                 path="/tasks"
                 element={
                   <ProtectedRoute>
-                    <Navigation />
-                    <MyTasks />
+                    <Layout>
+                      <MyTasks />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
@@ -73,17 +89,39 @@ function App() {
                 path="/rooms"
                 element={
                   <ProtectedRoute>
-                    <Navigation />
-                    <Rooms />
+                    <Layout>
+                      <Rooms />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />
               <Route
-                path="/profile"
+                path="/user/:uid"
                 element={
                   <ProtectedRoute>
-                    <Navigation />
-                    <Profile />
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/settings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ProfileSettings />
+                    </Layout>
                   </ProtectedRoute>
                 }
               />

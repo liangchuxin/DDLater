@@ -1,11 +1,24 @@
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
   hash: String, // a password hash
   courses: [{ type: mongoose.Schema.Types.ObjectId, ref: "Course" }], // references to Course documents
   badges: [String],
 });
+
+const ProfileSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", unique: true },
+    displayName: String,
+    uid: { type: String, unique: true },
+    avatar: String,
+    school: String,
+    graduationYear: Number,
+    major: String,
+  },
+  { timestamps: true },
+);
 
 const CourseSchema = new mongoose.Schema({
   courseCode: { type: String, required: true }, // e.g. "CSCI-UA 474"
@@ -34,6 +47,7 @@ const StudyRoomSchema = new mongoose.Schema({
 });
 
 mongoose.model("User", UserSchema);
+mongoose.model("Profile", ProfileSchema);
 mongoose.model("Course", CourseSchema);
 mongoose.model("Task", TaskSchema);
 mongoose.model("StudyRoom", StudyRoomSchema);

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DDLater — Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../feed.css">
+</head>
+<body>
+
+<!-- ══ HEADER (→ React: <AppHeader />) ══ -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-word">DD<span>Later</span></div>
+  </div>
+  <div class="header-mid">
+    <span class="h-date">WED APR 8, 2026 · 23:41</span>
+    <span class="h-live"><div class="live-sq"></div>23 working now</span>
+  </div>
+</header>
+
+<div class="body">
+
+  <!-- ══ SIDEBAR (→ React: <Sidebar />) ══ -->
+  <nav class="sidebar">
+    <div class="nav-item active" data-label="Feed">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square">
+        <rect x="2" y="2" width="7" height="7" rx="0.5"/>
+        <rect x="11" y="2" width="7" height="7" rx="0.5"/>
+        <rect x="2" y="11" width="7" height="7" rx="0.5"/>
+        <rect x="11" y="11" width="7" height="7" rx="0.5"/>
+      </svg>
+    </div>
+    <div class="nav-item" data-label="Rooms">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10" cy="7" r="3.2"/>
+        <path d="M3.5 18.5c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5"/>
+        <circle cx="16" cy="6.5" r="2" opacity="0.45"/>
+        <path d="M16 10.5c2 .5 3.5 2.2 3.5 4.5" opacity="0.45"/>
+      </svg>
+    </div>
+    <div class="nav-item" data-label="Tasks">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <rect x="3.5" y="2" width="13" height="16" rx="0.5"/>
+        <line x1="7" y1="7.5" x2="14" y2="7.5"/>
+        <line x1="7" y1="11" x2="12" y2="11"/>
+        <line x1="7" y1="14.5" x2="13.5" y2="14.5"/>
+      </svg>
+    </div>
+    <div class="nav-item" data-label="Badges">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="10,2 12.4,7.3 18,8.1 13.9,12.1 15,17.8 10,15 5,17.8 6.1,12.1 2,8.1 7.6,7.3"/>
+      </svg>
+    </div>
+    <div class="sb-sp"></div>
+    <div class="nav-item" data-label="Profile">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="10" cy="7" r="3.2"/>
+        <path d="M3 19c0-3.9 3.1-7 7-7s7 3.1 7 7"/>
+      </svg>
+    </div>
+  </nav>
+
+  <!-- ══ MAIN (→ React: <FeedPage />) ══ -->
+  <main class="main">
+    <div class="main-inner">
+
+      <!-- ══ FILTER BAR (→ React: <FeedFilter />) ══ -->
+      <div class="sec-head"><div class="sec-title">What people are working on</div></div>
+      <div class="filter-bar">
+        <button class="chip on">Everyone</button>
+        <button class="chip">My School</button>
+        <button class="chip">My Course</button>
+        <button class="chip">Due Today</button>
+        <button class="chip warn">0% Done</button>
+      </div>
+
+      <!-- ══ TASK GRID (→ React: <TaskGrid />) ══ -->
+      <!-- Layout:
+           Row 1: celia | mingxuan | jingwen | siyu          (4 × single)
+           Row 2: ruoze(wide) | haoyue | wenkai              (2+1+1, wide LEFT)
+           Row 3: liting | sinda | laura(wide)               (1+1+2, wide RIGHT)
+           Row 4: kairis | ziyang | ethan | promo            (4 × single)
+      -->
+      <div class="grid">
+
+        <!-- ROW 1 -->
+        <div class="card active">
+          <div class="card-img ci-1">
+            <span class="img-tag t-ait">AIT</span>
+            <div class="img-dot d-on"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#265c2e"/>
+              <rect x="2" y="5" width="9" height="7" fill="#37753f"/>
+              <rect x="1" y="7" width="2" height="3" fill="#37753f"/><rect x="10" y="7" width="2" height="3" fill="#37753f"/>
+              <rect x="3" y="12" width="3" height="4" fill="#1e4824"/><rect x="6" y="12" width="3" height="4" fill="#1e4824"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av av-g">CL</div><span class="who-name">celia</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">Milestone 3</div>
+            <div class="prog-bar"><div class="prog-fill pf-g" style="width:35%"></div></div>
+            <div class="prog-meta"><span>3 / 8</span><span>35%</span></div>
+            <div class="card-ddl ddl-s">6d left</div>
+          </div>
+        </div>
+
+        <div class="card active">
+          <div class="card-img ci-2">
+            <span class="img-tag t-se">SE</span>
+            <div class="img-dot d-on"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#5e3015"/>
+              <rect x="2" y="5" width="9" height="7" fill="#a05530"/>
+              <rect x="1" y="7" width="2" height="3" fill="#a05530"/><rect x="10" y="7" width="2" height="3" fill="#a05530"/>
+              <rect x="3" y="12" width="3" height="4" fill="#4a2410"/><rect x="6" y="12" width="3" height="4" fill="#4a2410"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">MX</div><span class="who-name">mingxuan</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">Project 3 — Ghosty</div>
+            <div class="prog-bar"><div class="prog-fill pf-y" style="width:60%"></div></div>
+            <div class="prog-meta"><span>6 / 10</span><span>60%</span></div>
+            <div class="card-ddl ddl-u">due in 14h</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-img ci-3">
+            <span class="img-tag t-bd">BD</span>
+            <div class="img-dot d-re"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#143050"/>
+              <rect x="2" y="5" width="9" height="7" fill="#205080"/>
+              <rect x="1" y="7" width="2" height="3" fill="#205080"/><rect x="10" y="7" width="2" height="3" fill="#205080"/>
+              <rect x="3" y="12" width="3" height="4" fill="#102440"/><rect x="6" y="12" width="3" height="4" fill="#102440"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">JW</div><span class="who-name">jingwen</span><span class="who-dept">NYU DS</span></div>
+            <div class="card-task">BD Final Project</div>
+            <div class="prog-bar"><div class="prog-fill pf-g" style="width:80%"></div></div>
+            <div class="prog-meta"><span>8 / 10</span><span>80%</span></div>
+            <div class="card-ddl ddl-o">12d left</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-img ci-4">
+            <span class="img-tag t-wd">WD</span>
+            <div class="img-dot d-off"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#3c1455"/>
+              <rect x="2" y="5" width="9" height="7" fill="#6830a0"/>
+              <rect x="1" y="7" width="2" height="3" fill="#6830a0"/><rect x="10" y="7" width="2" height="3" fill="#6830a0"/>
+              <rect x="3" y="12" width="3" height="4" fill="#2e0e40"/><rect x="6" y="12" width="3" height="4" fill="#2e0e40"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">SY</div><span class="who-name">siyu</span><span class="who-dept">NYU Math</span></div>
+            <div class="card-task">HW5 — Responsive</div>
+            <div class="prog-bar"><div class="prog-fill pf-g" style="width:100%"></div></div>
+            <div class="prog-meta"><span>done ✓</span><span>100%</span></div>
+            <div class="card-ddl ddl-o">submitted</div>
+          </div>
+        </div>
+
+        <!-- ROW 2 — wide LEFT -->
+        <div class="card wide active">
+          <div class="card-img ci-6">
+            <span class="img-tag t-se">SE</span>
+            <div class="img-dot d-on"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#521815"/>
+              <rect x="2" y="5" width="9" height="7" fill="#8e3530"/>
+              <rect x="1" y="7" width="2" height="3" fill="#8e3530"/><rect x="10" y="7" width="2" height="3" fill="#8e3530"/>
+              <rect x="3" y="12" width="3" height="4" fill="#3e100e"/><rect x="6" y="12" width="3" height="4" fill="#3e100e"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+            <svg class="px" width="56" height="72" viewBox="0 0 13 17" style="opacity:.28">
+              <rect x="3" y="0" width="7" height="5" fill="#443010"/>
+              <rect x="2" y="5" width="9" height="7" fill="#785030"/>
+              <rect x="1" y="7" width="2" height="3" fill="#785030"/><rect x="10" y="7" width="2" height="3" fill="#785030"/>
+              <rect x="3" y="12" width="3" height="4" fill="#342008"/><rect x="6" y="12" width="3" height="4" fill="#342008"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av av-r">RZ</div><span class="who-name">ruoze</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">Project 3 — Ghosty Package</div>
+            <div class="prog-bar"><div class="prog-fill pf-r" style="width:20%"></div></div>
+            <div class="prog-meta"><span>2 / 10</span><span>20%</span></div>
+            <div class="card-ddl ddl-u">due tonight · 23:59</div>
+          </div>
+        </div>
+
+        <div class="card active">
+          <div class="card-img ci-5">
+            <span class="img-tag t-ait">AIT</span>
+            <div class="img-dot d-re"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#14382a"/>
+              <rect x="2" y="5" width="9" height="7" fill="#326050"/>
+              <rect x="1" y="7" width="2" height="3" fill="#326050"/><rect x="10" y="7" width="2" height="3" fill="#326050"/>
+              <rect x="3" y="12" width="3" height="4" fill="#0e2a1e"/><rect x="6" y="12" width="3" height="4" fill="#0e2a1e"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av av-g">HY</div><span class="who-name">haoyue</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">HW#7 — MongoDB</div>
+            <div class="prog-bar"><div class="prog-fill pf-y" style="width:50%"></div></div>
+            <div class="prog-meta"><span>halfway</span><span>50%</span></div>
+            <div class="card-ddl ddl-s">3d left</div>
+          </div>
+        </div>
+
+        <div class="card active">
+          <div class="card-img ci-7">
+            <span class="img-tag t-bd">BD</span>
+            <div class="img-dot d-on"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#103830"/>
+              <rect x="2" y="5" width="9" height="7" fill="#206058"/>
+              <rect x="1" y="7" width="2" height="3" fill="#206058"/><rect x="10" y="7" width="2" height="3" fill="#206058"/>
+              <rect x="3" y="12" width="3" height="4" fill="#0a2820"/><rect x="6" y="12" width="3" height="4" fill="#0a2820"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">WK</div><span class="who-name">wenkai</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">HW6 — Spark ML</div>
+            <div class="prog-bar"><div class="prog-fill pf-y" style="width:70%"></div></div>
+            <div class="prog-meta"><span>7 / 10</span><span>70%</span></div>
+            <div class="card-ddl ddl-u">tonight</div>
+          </div>
+        </div>
+
+        <!-- ROW 3 — wide RIGHT -->
+        <div class="card">
+          <div class="card-img ci-8">
+            <span class="img-tag t-li">LIFE</span>
+            <div class="img-dot d-re"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#380e30"/>
+              <rect x="2" y="5" width="9" height="7" fill="#602858"/>
+              <rect x="1" y="7" width="2" height="3" fill="#602858"/><rect x="10" y="7" width="2" height="3" fill="#602858"/>
+              <rect x="3" y="12" width="3" height="4" fill="#280820"/><rect x="6" y="12" width="3" height="4" fill="#280820"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">LT</div><span class="who-name">liting</span><span class="who-dept">NYU Econ</span></div>
+            <div class="card-task">Grad School Essay</div>
+            <div class="prog-bar"><div class="prog-fill pf-g" style="width:45%"></div></div>
+            <div class="prog-meta"><span>draft 2 / 4</span><span>45%</span></div>
+            <div class="card-ddl ddl-s">5d left</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-img ci-9">
+            <span class="img-tag t-bd">BD</span>
+            <div class="img-dot d-off"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#184040"/>
+              <rect x="2" y="5" width="9" height="7" fill="#307060"/>
+              <rect x="1" y="7" width="2" height="3" fill="#307060"/><rect x="10" y="7" width="2" height="3" fill="#307060"/>
+              <rect x="3" y="12" width="3" height="4" fill="#102828"/><rect x="6" y="12" width="3" height="4" fill="#102828"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">SN</div><span class="who-name">sinda</span><span class="who-dept">NYU DS</span></div>
+            <div class="card-task">AO3 Data Pipeline</div>
+            <div class="prog-bar"><div class="prog-fill pf-r" style="width:0%"></div></div>
+            <div class="prog-meta"><span>not started</span><span style="color:var(--red)">0%</span></div>
+            <div class="card-ddl ddl-s">5d left</div>
+          </div>
+        </div>
+
+        <div class="card wide">
+          <div class="card-img ci-b">
+            <span class="img-tag t-wd">WD</span>
+            <div class="img-dot d-re"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#503020"/>
+              <rect x="2" y="5" width="9" height="7" fill="#907050"/>
+              <rect x="1" y="7" width="2" height="3" fill="#907050"/><rect x="10" y="7" width="2" height="3" fill="#907050"/>
+              <rect x="3" y="12" width="3" height="4" fill="#382010"/><rect x="6" y="12" width="3" height="4" fill="#382010"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+            <svg class="px" width="56" height="72" viewBox="0 0 13 17" style="opacity:.28">
+              <rect x="3" y="0" width="7" height="5" fill="#3c1455"/>
+              <rect x="2" y="5" width="9" height="7" fill="#6830a0"/>
+              <rect x="1" y="7" width="2" height="3" fill="#6830a0"/><rect x="10" y="7" width="2" height="3" fill="#6830a0"/>
+              <rect x="3" y="12" width="3" height="4" fill="#2e0e40"/><rect x="6" y="12" width="3" height="4" fill="#2e0e40"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">LR</div><span class="who-name">laura</span><span class="who-dept">NYU CDS</span></div>
+            <div class="card-task">WD Final Project</div>
+            <div class="prog-bar"><div class="prog-fill pf-g" style="width:55%"></div></div>
+            <div class="prog-meta"><span>5.5 / 10</span><span>55%</span></div>
+            <div class="card-ddl ddl-s">4d left</div>
+          </div>
+        </div>
+
+        <!-- ROW 4 -->
+        <div class="card">
+          <div class="card-img ci-a">
+            <span class="img-tag t-se">SE</span>
+            <div class="img-dot d-off"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#303050"/>
+              <rect x="2" y="5" width="9" height="7" fill="#505090"/>
+              <rect x="1" y="7" width="2" height="3" fill="#505090"/><rect x="10" y="7" width="2" height="3" fill="#505090"/>
+              <rect x="3" y="12" width="3" height="4" fill="#202038"/><rect x="6" y="12" width="3" height="4" fill="#202038"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">KL</div><span class="who-name">kairis</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">SE Quiz prep</div>
+            <div class="prog-bar"><div class="prog-fill pf-r" style="width:0%"></div></div>
+            <div class="prog-meta"><span>not started</span><span style="color:var(--red)">0%</span></div>
+            <div class="card-ddl ddl-u">tomorrow</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-img ci-c">
+            <span class="img-tag t-ait">AIT</span>
+            <div class="img-dot d-off"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#2a4820"/>
+              <rect x="2" y="5" width="9" height="7" fill="#487040"/>
+              <rect x="1" y="7" width="2" height="3" fill="#487040"/><rect x="10" y="7" width="2" height="3" fill="#487040"/>
+              <rect x="3" y="12" width="3" height="4" fill="#1e3418"/><rect x="6" y="12" width="3" height="4" fill="#1e3418"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av av-g">ZY</div><span class="who-name">ziyang</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">HW#6 — Sessions</div>
+            <div class="prog-bar"><div class="prog-fill pf-g" style="width:90%"></div></div>
+            <div class="prog-meta"><span>9 / 10</span><span>90%</span></div>
+            <div class="card-ddl ddl-o">submitted</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-img ci-5">
+            <span class="img-tag t-ait">AIT</span>
+            <div class="img-dot d-off"></div>
+            <svg class="px" width="74" height="92" viewBox="0 0 13 17">
+              <rect x="3" y="0" width="7" height="5" fill="#3a2010"/>
+              <rect x="2" y="5" width="9" height="7" fill="#704030"/>
+              <rect x="1" y="7" width="2" height="3" fill="#704030"/><rect x="10" y="7" width="2" height="3" fill="#704030"/>
+              <rect x="3" y="12" width="3" height="4" fill="#281408"/><rect x="6" y="12" width="3" height="4" fill="#281408"/>
+              <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-who"><div class="av">ET</div><span class="who-name">ethan</span><span class="who-dept">NYU CS</span></div>
+            <div class="card-task">HW#7 — Mongoose</div>
+            <div class="prog-bar"><div class="prog-fill pf-r" style="width:0%"></div></div>
+            <div class="prog-meta"><span>not started</span><span style="color:var(--red)">0%</span></div>
+            <div class="card-ddl ddl-u">3d left</div>
+          </div>
+        </div>
+
+        <div class="card card-promo">
+          <svg width="76" height="96" viewBox="0 0 13 17" style="image-rendering:pixelated;opacity:0.5">
+            <rect x="3" y="0" width="7" height="5" fill="#2D8A3E"/>
+            <rect x="2" y="5" width="9" height="7" fill="#4CAF62"/>
+            <rect x="1" y="7" width="2" height="3" fill="#4CAF62"/><rect x="10" y="7" width="2" height="3" fill="#4CAF62"/>
+            <rect x="3" y="12" width="3" height="4" fill="#2D8A3E"/><rect x="6" y="12" width="3" height="4" fill="#2D8A3E"/>
+            <rect x="4" y="1" width="1" height="1" fill="#dfc070"/><rect x="8" y="1" width="1" height="1" fill="#dfc070"/>
+          </svg>
+          <div class="promo-title">Get your<br>pixel avatar!</div>
+          <div class="promo-sub">COMING SOON →</div>
+        </div>
+
+      </div>
+
+      <!-- ══ STUDY ROOMS 暂时隐藏，样式已保留在 feed.css (→ React: <RoomsPreview />) ══ -->
+
+    </div>
+  </main>
+
+</div>
+
+<script>
+document.querySelectorAll('.filter-bar .chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.filter-bar .chip').forEach(x => x.classList.remove('on'));
+    c.classList.add('on');
+  });
+});
+</script>
+</body>
+</html>

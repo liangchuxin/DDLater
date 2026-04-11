@@ -1,0 +1,212 @@
+/* ── Profile.css ────────────────────────────────────────────────────────────── */
+
+/* ── 헤더: 아바타 + 이름 + 학교 ── */
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px 0 32px;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--bg3);
+  object-fit: cover;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "DM Mono", monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--muted);
+  border: 1.5px solid var(--bg3);
+  overflow: hidden;
+}
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-hero-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profile-name {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.profile-school {
+  font-family: "DM Mono", monospace;
+  font-size: 14px;
+  color: var(--green);
+  letter-spacing: 0.04em;
+}
+
+.profile-settings-link {
+  margin-left: auto;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 9px 18px;
+  border: 1.5px solid var(--bg3);
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.profile-settings-link:hover {
+  border-color: var(--ink2);
+  color: var(--ink);
+}
+
+/* ── Stats row ── */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 28px;
+  margin-bottom: 32px;
+  justify-content: start;
+}
+
+.profile-stat {
+  font-family: "DM Mono", monospace;
+  font-weight: 500;
+  border: 1.5px solid var(--ink);
+  font-size: 15px;
+  border: 3px solid var(--ink2);
+  background: var(--green);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-radius: var(--radius);
+  box-shadow: 4px 4px 0 var(--ink2);
+  padding: 14px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 150px;
+}
+
+.profile-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0 var(--ink2);
+  background: var(--greenl);
+}
+
+.profile-stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: white;
+}
+
+.profile-stat-label {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1.5;
+  color: #d6d6d6;
+}
+
+/* ── 하단 2열 그리드 ── */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.profile-panel {
+  background: var(--paper);
+  padding: 24px 28px;
+}
+
+.profile-panel-title {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 20px;
+}
+
+/* Courses */
+.profile-courses {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-course-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-course-dot {
+  width: 5px;
+  height: 5px;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+
+.profile-course-name {
+  font-family: "DM Mono", monospace;
+  font-size: 15px;
+  color: var(--ink2);
+  letter-spacing: 0.03em;
+}
+
+/* Badges */
+.profile-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-badge-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.profile-badge-dash {
+  font-family: "DM Mono", monospace;
+  font-size: 15px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.profile-badge-text {
+  font-size: 17px;
+  color: var(--ink2);
+  line-height: 1.4;
+}
+
+/* empty */
+.profile-empty {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
