@@ -17,7 +17,20 @@ const app = express();
 app.set('trust proxy', 1);
 console.log('NODE_ENV:', process.env.NODE_ENV);
 
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+const allowedOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',')
+  : [];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
 
 // middleware
 
