@@ -32,7 +32,7 @@ export default function SchoolSearch({ value, onChange, onConfirmChange }) {
 
     debounceRef.current = setTimeout(async () => {
       const res = await fetch(
-        `http://universities.hipolabs.com/search?name=${encodeURIComponent(val)}&country=United+States`
+        `${import.meta.env.VITE_API_URL}/api/universities?name=${encodeURIComponent(val)}`
       );
       const data = await res.json();
       setResults(data.slice(0, 8));

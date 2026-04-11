@@ -55,6 +55,13 @@ app.use(
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
 
+app.get('/api/universities', async (req, res) => {
+  const { name } = req.query;
+  const response = await fetch(`http://universities.hipolabs.com/search?name=${encodeURIComponent(name)}&country=United+States`);
+  const data = await response.json();
+  return res.json(data);
+});
+
 app.get("/api/test", (req, res) => res.json({ message: "ok" }));
 
 app.listen(process.env.PORT ?? 3000, () => console.log("server running"));
