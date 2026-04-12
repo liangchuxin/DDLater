@@ -22,9 +22,15 @@ router.patch('/', async (req, res) => {
     return res.status(401).json({ error: 'Not logged in.' });
   }
   const { school, graduationYear, avatar, displayName } = req.body;
+  const updates = {};
+  if (school !== undefined) updates.school = school;
+  if (graduationYear !== undefined) updates.graduationYear = graduationYear;
+  if (avatar !== undefined) updates.avatar = avatar;
+  if (displayName !== undefined) updates.displayName = displayName;
+
   const updated = await Profile.findOneAndUpdate(
     { user: req.session.userId },
-    { school, graduationYear, avatar, displayName },
+    { $set: updates },
     { new: true }
   );
   return res.json(updated);

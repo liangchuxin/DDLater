@@ -12,6 +12,7 @@ export default function ProfileSettings() {
   const [draftName, setDraftName] = useState("");
   const [draftSchool, setDraftSchool] = useState("");
   const [schoolConfirmed, setSchoolConfirmed] = useState(true);
+  const [avatar, setAvatar] = useState("");
 
   // email
   const [draftEmail, setDraftEmail] = useState("");
@@ -37,18 +38,6 @@ export default function ProfileSettings() {
         setDraftSchool(data.school ?? "");
       });
   }, []);
-
-  const handleAvatarChange = async () => {
-    const url = window.prompt("Paste avatar URL:");
-    if (!url) return;
-    setProfile({ ...profile, avatar: url });
-    await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ avatar: url }),
-    });
-  };
 
   const handleSave = async () => {
     // 学校搜索框处于未确认状态
@@ -152,7 +141,10 @@ export default function ProfileSettings() {
               <div
                 className="ps-avatar-edit"
                 title="Change avatar"
-                onClick={handleAvatarChange}
+                onClick={() => {
+                  const url = window.prompt("Paste avatar URL:");
+                  if (url) setProfile({ ...profile, avatar: url });
+                }}
               >
                 <svg
                   width="11"

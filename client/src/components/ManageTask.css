@@ -1,0 +1,316 @@
+/* ── ManageTask.css ─────────────────────────────────────────────────────────── */
+
+.mt-form-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  margin-bottom: 28px;
+}
+
+/* 两列布局：≥800px 左右分栏，<800px 上下一列 */
+.mt-form-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 48px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .mt-form-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 左右两列各自纵向排列字段 */
+.mt-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 单个字段 */
+.mt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mt-field-label {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mt-field-hint {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: -4px;
+}
+
+/* 共用 input / textarea / select */
+.mt-input,
+.mt-textarea,
+.mt-select {
+  width: 100%;
+  padding: 11px 16px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 17px;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1.5px solid var(--bg3);
+  border-radius: 0;
+  outline: none;
+  transition: border-color 0.15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.mt-input:focus,
+.mt-textarea:focus,
+.mt-select:focus {
+  border-color: var(--green);
+}
+.mt-input::placeholder,
+.mt-textarea::placeholder {
+  color: var(--muted);
+}
+.mt-textarea {
+  resize: vertical;
+  min-height: 110px;
+  line-height: 1.5;
+}
+
+/* progress: done / total 并排 */
+.mt-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mt-progress-row .mt-input {
+  width: 88px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.mt-progress-sep {
+  font-family: "DM Mono", monospace;
+  font-size: 17px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* visibility: chip 선택 그룹 */
+.mt-vis-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mt-vis-chip {
+  padding: 7px 18px;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: var(--bg2);
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
+}
+.mt-vis-chip:hover {
+  background: var(--bg3);
+  color: var(--ink);
+}
+.mt-vis-chip.selected {
+  background: var(--greenbg);
+  color: var(--green);
+  border-color: var(--greenl);
+}
+
+/* Create / Save 버튼 */
+.mt-submit-btn {
+  margin-top: 8px;
+  padding: 12px 32px;
+  font-family: "DM Mono", monospace;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+  background: transparent;
+  border: 1.5px solid var(--green);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  display: inline-block;
+}
+.mt-submit-btn:hover {
+  background: var(--greenbg);
+}
+
+/* delete 按鈕 — 和 submit 一样的轮廓风格，红色 */
+.mt-delete-btn {
+  margin-top: 8px;
+  padding: 12px 32px;
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--red);
+  background: transparent;
+  border: 1.5px solid var(--red);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  display: inline-block;
+}
+.mt-delete-btn:hover {
+  background: var(--redbg);
+}
+
+/* school readonly — 和 input 一样的外观但不可编辑 */
+.mt-school-readonly {
+  width: 100%;
+  padding: 11px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 17px;
+  color: var(--muted);
+  background: var(--bg2);
+  border: 1.5px solid var(--bg3);
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* back to tasks 按鈕 — 突出 main-inner 左边 */
+.mt-back-btn {
+  position: absolute;
+  left: -140px;
+  top: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.mt-back-btn:hover {
+  color: var(--ink);
+}
+
+.mt-prog-visual {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.mt-prog-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--bg3);
+  outline: none;
+  cursor: pointer;
+  accent-color: var(--green);
+}
+.mt-prog-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: var(--green);
+  border-radius: 0;
+  cursor: pointer;
+  border: none;
+}
+.mt-prog-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: var(--green);
+  border-radius: 0;
+  cursor: pointer;
+  border: none;
+}
+
+.mt-prog-visual-label {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: right;
+}
+
+.mt-date-row {
+  display: flex;
+  align-items: center;
+  background: var(--paper);
+  border: 1.5px solid var(--bg3);
+  transition: border-color 0.15s;
+}
+.mt-date-row:focus-within {
+  border-color: var(--green);
+}
+.mt-date-label {
+  padding: 11px 16px;
+  font-family: "DM Sans", sans-serif;
+  font-size: 17px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mt-date-input {
+  flex: 1;
+  border: none !important;
+  padding-left: 0;
+  background: transparent;
+  color: var(--ink);
+}
+.mt-date-input:focus {
+  border-color: transparent !important;
+  outline: none;
+}
+
+.mt-school-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: var(--bg2);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  user-select: none;
+}
+.mt-school-badge:hover {
+  background: var(--greenbg);
+  color: var(--green);
+}
+.mt-school-badge::before {
+  content: "↩";
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* 에러 메시지 */
+.mt-error {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--red);
+  margin-top: 4px;
+}

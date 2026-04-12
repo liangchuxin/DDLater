@@ -1,0 +1,257 @@
+/* ── MyTasks.css ──────────────────────────────────────────────────────────── */
+
+/* 页头行：标题 + Add Task 按钮 */
+.mt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.mt-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.mt-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.07em;
+  color: var(--green);
+  background: transparent;
+  border: 1.5px solid var(--green);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.mt-add-btn:hover {
+  background: var(--greenbg);
+}
+
+/* 2열 그리드 */
+.mt-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+/* 개별 task 카드 */
+.mt-card {
+  background: var(--paper);
+  padding: 20px 24px;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.18s;
+}
+.mt-card:hover {
+  transform: translateY(-2px);
+}
+
+/* 카드 상단: 제목 + 퍼센트 */
+.mt-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mt-card-name {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.mt-card-pct {
+  font-family: "DM Mono", monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.mt-card-pct.urgent {
+  color: var(--red);
+}
+.mt-card-pct.warn {
+  color: var(--amber);
+}
+.mt-card-pct.done {
+  color: var(--green);
+}
+
+/* 프로그레스 바 */
+.mt-prog-bar {
+  height: 2px;
+  background: var(--bg2);
+  margin-bottom: 10px;
+}
+.mt-prog-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.3s;
+}
+.mt-prog-fill.urgent {
+  background: var(--red);
+}
+.mt-prog-fill.warn {
+  background: var(--amber);
+}
+
+/* 메타 행: deadline · course · progress */
+.mt-card-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+}
+
+.mt-card-ddl {
+  color: var(--green);
+}
+.mt-card-ddl.urgent {
+  background: #2d8a3e;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.mt-card-ddl.urgent > svg {
+  margin-top: -3px;
+}
+.mt-card-ddl.warn {
+  color: var(--amber);
+}
+
+.mt-card-dot {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.mt-card-course {
+  color: var(--muted);
+}
+
+.mt-card-progress {
+  color: var(--green);
+  margin-left: auto;
+}
+
+/* footer: badge 左 + edit 按钮右 */
+.mt-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* visibility badge — 只有 hidden 才显示 */
+.mt-card-vis-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  /* margin-top: 10px; */
+  padding: 4px 10px;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: var(--bg2);
+}
+
+/* edit 按钮 */
+.mt-card-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 0 4px 10px;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.mt-card-edit:hover {
+  color: var(--ink);
+}
+
+/* ── urgent card: 彩虹渐变 + 左侧 pulse 指示器 ── */
+@keyframes rainbow-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+@keyframes urgent-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+@keyframes urgent-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scaleY(0.7);
+  }
+}
+
+.mt-card-urgent {
+  background: linear-gradient(
+    270deg,
+    #ffd6d6,
+    #ffe8c0,
+    #fffbd6,
+    #d6ffd6,
+    #d6f0ff,
+    #e8d6ff,
+    #ffd6f0,
+    #ffd6d6
+  );
+  background-size: 400% 400%;
+  animation:
+    rainbow-shift 5s ease infinite,
+    urgent-bounce 2s ease-in-out infinite;
+}
+.mt-card-urgent:hover {
+  transform: none;
+}
+
+/* 左侧 pulse 竖条 */
+.mt-card-urgent::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--greenl);
+  animation: urgent-pulse 1.2s ease-in-out infinite;
+  z-index: 1;
+}

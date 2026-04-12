@@ -12,6 +12,7 @@ import Rooms from "./components/Rooms";
 import Profile from "./components/Profile";
 import ProfileSettings from "./components/ProfileSettings";
 import Badges from "./components/Badges";
+import { AddTask, EditTask } from "./components/ManageTask";
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
@@ -121,6 +122,26 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <ProfileSettings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks/add"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AddTask />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EditTask />
                     </Layout>
                   </ProtectedRoute>
                 }
