@@ -1,55 +1,87 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import SchoolSearch from './SchoolSearch';
-import CourseSearch from './CourseSearch';
-import './ManageTask.css';
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import SchoolSearch from "./SchoolSearch";
+import CourseSearch from "./CourseSearch";
+import "./ManageTask.css";
 
 const VISIBILITY_OPTIONS = [
-  { value: 'public',   label: 'Visible to all' },
-  { value: 'school',   label: 'Hidden from classmates' },
-  { value: 'private',  label: 'Private' },
+  { value: "public", label: "Visible to all" },
+  { value: "school", label: "Hidden from classmates" },
+  { value: "private", label: "Private" },
 ];
 
-function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool, onDelete, readonlySchool }) {
+function TaskForm({
+  initialData,
+  onSubmit,
+  submitLabel,
+  pageTitle,
+  defaultSchool,
+  onDelete,
+  readonlySchool,
+}) {
   const navigate = useNavigate();
-  const [title, setTitle]           = useState(initialData?.title ?? '');
-  const [description, setDescription] = useState(initialData?.description ?? '');
-  const [dueDate, setDueDate]       = useState(
-    initialData?.dueDate ? new Date(initialData.dueDate).toISOString().slice(0, 16) : ''
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [description, setDescription] = useState(
+    initialData?.description ?? "",
   );
-  const [course, setCourse]         = useState(initialData?.course?.courseCode ?? initialData?.course ?? '');
-  const [school, setSchool]         = useState(initialData?.course?.school ?? initialData?.school ?? '');
-  const [progressDone, setDone]     = useState(initialData?.progressNumerator ?? 0);
-  const [progressTotal, setTotal]   = useState(initialData?.progressDenominator ?? 1);
+  const [dueDate, setDueDate] = useState(
+    initialData?.dueDate
+      ? new Date(initialData.dueDate).toISOString().slice(0, 16)
+      : "",
+  );
+  const [course, setCourse] = useState(
+    initialData?.course?.courseCode ?? initialData?.course ?? "",
+  );
+  const [school, setSchool] = useState(
+    initialData?.course?.school ?? initialData?.school ?? "",
+  );
+  const [progressDone, setDone] = useState(initialData?.progressNumerator ?? 0);
+  const [progressTotal, setTotal] = useState(
+    initialData?.progressDenominator ?? 1,
+  );
   const [visibility, setVisibility] = useState(
-    initialData?.hideFromClassmates ? 'school' : 'public'
+    initialData?.hideFromClassmates ? "school" : "public",
   );
-  const [error, setError]           = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) { setError('Title is required.'); return; }
-    if (Number(progressDone) > Number(progressTotal)) { setError('Progress cannot exceed total.'); return; }
-    setError('');
+    if (!title.trim()) {
+      setError("Title is required.");
+      return;
+    }
+    if (Number(progressDone) > Number(progressTotal)) {
+      setError("Progress cannot exceed total.");
+      return;
+    }
+    setError("");
     await onSubmit({
       title,
       description,
-      dueDate,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : "",
       course,
       school,
       progressNumerator: Number(progressDone),
       progressDenominator: Number(progressTotal),
-      hideFromClassmates: visibility === 'school',
-      private: visibility === 'private',
+      hideFromClassmates: visibility === "school",
+      private: visibility === "private",
     });
   };
 
   return (
     <main className="main">
-      <div className="main-inner" style={{ position: 'relative' }}>
-        <button className="mt-back-btn" onClick={() => navigate('/tasks')}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"
-            stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <div className="main-inner" style={{ position: "relative" }}>
+        <button className="mt-back-btn" onClick={() => navigate("/tasks")}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="10,3 4,8 10,13" />
           </svg>
           Back to tasks
@@ -58,7 +90,6 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
 
         <form onSubmit={handleSubmit}>
           <div className="mt-form-layout">
-
             {/* ── 左列: 主要字段 ── */}
             <div className="mt-form-col">
               <div className="mt-field">
@@ -66,7 +97,7 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                   className="mt-input"
                   type="text"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   placeholder="task title"
                 />
               </div>
@@ -75,7 +106,7 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                 <textarea
                   className="mt-textarea"
                   value={description}
-                  onChange={e => setDescription(e.target.value)}
+                  onChange={(e) => setDescription(e.target.value)}
                   placeholder="description (optional)"
                 />
               </div>
@@ -87,18 +118,18 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                     className="mt-input mt-date-input"
                     type="datetime-local"
                     value={dueDate}
-                    onChange={e => setDueDate(e.target.value)}
+                    onChange={(e) => setDueDate(e.target.value)}
                   />
                 </div>
               </div>
 
               <div className="mt-field">
                 {readonlySchool ? (
-                  <div className="mt-school-readonly">{course || '—'}</div>
+                  <div className="mt-school-readonly">{course || "—"}</div>
                 ) : (
                   <CourseSearch
                     value={course}
-                    onChange={val => setCourse(val)}
+                    onChange={(val) => setCourse(val)}
                     school={school}
                   />
                 )}
@@ -106,12 +137,14 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
 
               <div className="mt-field">
                 {readonlySchool ? (
-                  <div className="mt-school-readonly">{school || 'Unspecified'}</div>
+                  <div className="mt-school-readonly">
+                    {school || "Unspecified"}
+                  </div>
                 ) : (
                   <>
                     <SchoolSearch
                       value={school}
-                      onChange={val => setSchool(val)}
+                      onChange={(val) => setSchool(val)}
                       onConfirmChange={() => {}}
                     />
                     {defaultSchool && (
@@ -138,7 +171,9 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                     min="0"
                     max={progressTotal}
                     value={progressDone}
-                    onChange={e => setDone(Math.min(Number(e.target.value), progressTotal))}
+                    onChange={(e) =>
+                      setDone(Math.min(Number(e.target.value), progressTotal))
+                    }
                     placeholder="done"
                   />
                   <span className="mt-progress-sep">/</span>
@@ -147,11 +182,13 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                     type="number"
                     min="1"
                     value={progressTotal}
-                    onChange={e => setTotal(Number(e.target.value))}
+                    onChange={(e) => setTotal(Number(e.target.value))}
                     placeholder="total"
                   />
                 </div>
-                <div className="mt-field-hint">e.g. 3 chapters done out of 8</div>
+                <div className="mt-field-hint">
+                  e.g. 3 chapters done out of 8
+                </div>
                 <div className="mt-prog-visual">
                   <input
                     className="mt-prog-slider"
@@ -159,7 +196,7 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                     min="0"
                     max={progressTotal}
                     value={progressDone}
-                    onChange={e => setDone(Number(e.target.value))}
+                    onChange={(e) => setDone(Number(e.target.value))}
                   />
                   <span className="mt-prog-visual-label">
                     {progressDone} / {progressTotal}
@@ -170,11 +207,11 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
               <div className="mt-field">
                 <div className="mt-field-label">Visibility</div>
                 <div className="mt-vis-group">
-                  {VISIBILITY_OPTIONS.map(opt => (
+                  {VISIBILITY_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
-                      className={`mt-vis-chip${visibility === opt.value ? ' selected' : ''}`}
+                      className={`mt-vis-chip${visibility === opt.value ? " selected" : ""}`}
                       onClick={() => setVisibility(opt.value)}
                     >
                       {opt.label}
@@ -191,7 +228,11 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
                   type="button"
                   className="mt-delete-btn"
                   onClick={() => {
-                    if (window.confirm('Are you sure you want to delete this task?')) {
+                    if (
+                      window.confirm(
+                        "Are you sure you want to delete this task?",
+                      )
+                    ) {
                       onDelete();
                     }
                   }}
@@ -201,7 +242,6 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
               )}
               {error && <div className="mt-error">{error}</div>}
             </div>
-
           </div>
         </form>
       </div>
@@ -211,67 +251,98 @@ function TaskForm({ initialData, onSubmit, submitLabel, pageTitle, defaultSchool
 
 export function AddTask() {
   const navigate = useNavigate();
-  const [defaultSchool, setDefaultSchool] = useState('');
+  const [defaultSchool, setDefaultSchool] = useState("");
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/profile`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setDefaultSchool(data.school ?? ''));
+    fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => setDefaultSchool(data.school ?? ""));
   }, []);
 
   const handleSubmit = async (data) => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(data),
     });
-    if (res.ok) navigate('/tasks');
+    if (res.ok) navigate("/tasks");
   };
 
-  return <TaskForm onSubmit={handleSubmit} submitLabel="Create Task" pageTitle="Add a Task" defaultSchool={defaultSchool} />;
+  return (
+    <TaskForm
+      onSubmit={handleSubmit}
+      submitLabel="Create Task"
+      pageTitle="Add a Task"
+      defaultSchool={defaultSchool}
+    />
+  );
 }
 
 export function EditTask() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [task, setTask] = useState(null);
-  const [defaultSchool, setDefaultSchool] = useState('');
+  const [defaultSchool, setDefaultSchool] = useState("");
 
   useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setTask(data));
-    fetch(`${import.meta.env.VITE_API_URL}/api/profile`, { credentials: 'include' })
-      .then(res => res.json())
-      .then(data => setDefaultSchool(data.school ?? ''));
+    fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => setTask(data));
+    fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => setDefaultSchool(data.school ?? ""));
   }, [id]);
 
   const handleSubmit = async (data) => {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(data),
     });
-    if (res.ok) navigate('/tasks');
+    if (res.ok) navigate("/tasks");
   };
 
   const handleDelete = async () => {
     await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
+      method: "DELETE",
+      credentials: "include",
     });
-    navigate('/tasks');
+    navigate("/tasks");
   };
 
-  if (!task) return (
-    <main className="main">
-      <div className="main-inner" style={{ fontFamily: "'DM Mono',monospace", fontSize: 13, color: 'var(--muted)' }}>
-        Loading…
-      </div>
-    </main>
-  );
+  if (!task)
+    return (
+      <main className="main">
+        <div
+          className="main-inner"
+          style={{
+            fontFamily: "'DM Mono',monospace",
+            fontSize: 13,
+            color: "var(--muted)",
+          }}
+        >
+          Loading…
+        </div>
+      </main>
+    );
 
-  return <TaskForm initialData={task} onSubmit={handleSubmit} onDelete={handleDelete} submitLabel="Save Changes" pageTitle="Edit Task" defaultSchool={defaultSchool} readonlySchool />;
+  return (
+    <TaskForm
+      initialData={task}
+      onSubmit={handleSubmit}
+      onDelete={handleDelete}
+      submitLabel="Save Changes"
+      pageTitle="Edit Task"
+      defaultSchool={defaultSchool}
+      readonlySchool
+    />
+  );
 }
