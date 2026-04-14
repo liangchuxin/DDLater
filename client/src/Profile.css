@@ -1,6 +1,3 @@
-/* ── Profile.css ────────────────────────────────────────────────────────────── */
-
-/* ── 헤더: 아바타 + 이름 + 학교 ── */
 .profile-hero {
   display: flex;
   align-items: center;
@@ -128,7 +125,6 @@
   color: #d6d6d6;
 }
 
-/* ── 하단 2열 그리드 ── */
 .profile-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

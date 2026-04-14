@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from "react";
 
 export default function SchoolSearch({ value, onChange, onConfirmChange }) {
-  const [query, setQuery] = useState(value || '');
+  const [query, setQuery] = useState(value || "");
   const [results, setResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [confirmed, setConfirmed] = useState(!!value); // 初始有值视为已确认
   const debounceRef = useRef(null);
 
   useEffect(() => {
-    setQuery(value || '');
+    setQuery(value || "");
     setConfirmed(!!value);
   }, [value]);
 
@@ -16,7 +16,6 @@ export default function SchoolSearch({ value, onChange, onConfirmChange }) {
     const val = e.target.value;
     setQuery(val);
 
-    // 手动修改 → 退出已确认状态
     if (confirmed) {
       setConfirmed(false);
       onConfirmChange?.(false);
@@ -32,7 +31,7 @@ export default function SchoolSearch({ value, onChange, onConfirmChange }) {
 
     debounceRef.current = setTimeout(async () => {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/universities?name=${encodeURIComponent(val)}`
+        `${import.meta.env.VITE_API_URL}/api/universities?name=${encodeURIComponent(val)}`,
       );
       const data = await res.json();
       setResults(data.slice(0, 8));

@@ -1,5 +1,3 @@
-/* ── ManageTask.css ─────────────────────────────────────────────────────────── */
-
 .mt-form-title {
   font-size: 22px;
   font-weight: 600;
@@ -8,7 +6,6 @@
   margin-bottom: 28px;
 }
 
-/* 两列布局：≥800px 左右分栏，<800px 上下一列 */
 .mt-form-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -21,14 +18,12 @@
   }
 }
 
-/* 左右两列各自纵向排列字段 */
 .mt-form-col {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-/* 单个字段 */
 .mt-field {
   display: flex;
   flex-direction: column;
@@ -50,7 +45,6 @@
   margin-top: -4px;
 }
 
-/* 共用 input / textarea / select */
 .mt-input,
 .mt-textarea,
 .mt-select {
@@ -82,7 +76,6 @@
   line-height: 1.5;
 }
 
-/* progress: done / total 并排 */
 .mt-progress-row {
   display: flex;
   align-items: center;
@@ -100,7 +93,6 @@
   flex-shrink: 0;
 }
 
-/* visibility: chip 선택 그룹 */
 .mt-vis-group {
   display: flex;
   flex-wrap: wrap;
@@ -130,7 +122,6 @@
   border-color: var(--greenl);
 }
 
-/* Create / Save 버튼 */
 .mt-submit-btn {
   margin-top: 8px;
   padding: 12px 32px;
@@ -151,11 +142,10 @@
   background: var(--greenbg);
 }
 
-/* delete 按鈕 — 和 submit 一样的轮廓风格，红色 */
 .mt-delete-btn {
   margin-top: 8px;
   padding: 12px 32px;
-  font-family: 'DM Mono', monospace;
+  font-family: "DM Mono", monospace;
   font-size: 14px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -163,7 +153,9 @@
   background: transparent;
   border: 1.5px solid var(--red);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   display: inline-block;
 }
 .mt-delete-btn:hover {
@@ -174,7 +166,7 @@
 .mt-school-readonly {
   width: 100%;
   padding: 11px 16px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   font-size: 17px;
   color: var(--muted);
   background: var(--bg2);
@@ -183,7 +175,6 @@
   user-select: none;
 }
 
-/* back to tasks 按鈕 — 突出 main-inner 左边 */
 .mt-back-btn {
   position: absolute;
   left: -140px;
@@ -307,7 +298,6 @@
   opacity: 0.6;
 }
 
-/* 에러 메시지 */
 .mt-error {
   font-family: "DM Mono", monospace;
   font-size: 13px;

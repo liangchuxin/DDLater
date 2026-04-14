@@ -160,7 +160,7 @@ function TaskForm({
               </div>
             </div>
 
-            {/* ── 右列: Progress + Visibility + Submit ── */}
+            {/* Right column */}
             <div className="mt-form-col">
               <div className="mt-field">
                 <div className="mt-field-label">Progress</div>

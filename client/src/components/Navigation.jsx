@@ -3,28 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { useState, useEffect } from "react";
 import logoLight from "../assets/logo.svg";
 
-// 原来的简单 ul/li nav 已注释掉，换成带图标的 sidebar + header
-/*
-export default function Navigation() {
-  const navigate = useNavigate();
-  const { setCurrentUser } = useAuth();
-  const handleLogout = async () => {
-    await fetch(`${import.meta.env.VITE_API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
-    setCurrentUser(null);
-    navigate('/');
-  };
-  return (
-    <ul>
-      <li onClick={() => navigate('/')}>Feed</li>
-      <li onClick={() => navigate('/rooms')}>Rooms</li>
-      <li onClick={() => navigate('/tasks')}>My Tasks</li>
-      <li onClick={() => navigate('/profile')}>Profile</li>
-      <li onClick={handleLogout}>Logout</li>
-    </ul>
-  );
-}
-*/
-
 const NAV_ITEMS = [
   {
     path: "/",
@@ -148,14 +126,13 @@ export default function Navigation({ children }) {
         </div>
         <div className="header-mid">
           <span className="h-date">{formatted}</span>
-          {/* TODO: 之后换成实时在线人数 */}
+          {/* 之后换成实时在线人数 */}
           <span className="h-live">
             <div className="live-sq"></div>online
           </span>
         </div>
       </header>
 
-      {/* .body: sidebar + 页面内容 */}
       <div className="body">
         <nav className="sidebar">
           {NAV_ITEMS.map(({ path, label, icon }) => (
