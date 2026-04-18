@@ -64,7 +64,7 @@ export default function ProfileSettings() {
       body: JSON.stringify({
         school: draftSchool,
         graduationYear: profile.graduationYear,
-        avatar: profile.avatar,
+        ...(profile.avatar ? { avatar: profile.avatar } : {}),
         displayName: draftName,
       }),
     });
