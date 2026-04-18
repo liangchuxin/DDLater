@@ -14,6 +14,7 @@
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
+  --pixel: 'StardewValley', 'DM Mono', monospace;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
@@ -52,6 +53,13 @@
 
 body {
   margin: 0;
+}
+
+/* Stardew Valley 像素字体，用于 .live-room-name 和 .live-panel-badge 等像素风元素 */
+@font-face {
+  font-family: 'StardewValley';
+  src: url('/fonts/StardewValley.ttf') format('truetype');
+  font-display: swap;
 }
 
 #root {

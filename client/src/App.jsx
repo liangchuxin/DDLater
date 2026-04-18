@@ -7,12 +7,14 @@ import Register from "./components/Register";
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import Navigation from "./components/Navigation";
+import Live from "./components/Live";
 import MyTasks from "./components/MyTasks";
 import Rooms from "./components/Rooms";
 import Profile from "./components/Profile";
 import ProfileSettings from "./components/ProfileSettings";
 import Badges from "./components/Badges";
 import { AddTask, EditTask } from "./components/ManageTask";
+import AvatarStudio from "./components/AvatarStudio";
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
@@ -22,8 +24,8 @@ function ProtectedRoute({ children }) {
 }
 function GuestRoute({ children }) {
   const { currentUser } = useAuth();
-  if (currentUser === undefined) return null; // 加载中
-  if (currentUser) return <Navigate to="/" />; // 已登录就跳回 dashboard
+  if (currentUser === undefined) return null;
+  if (currentUser) return <Navigate to="/" />;
   return children;
 }
 
@@ -33,120 +35,20 @@ function App() {
       <>
         <AuthProvider>
           <BrowserRouter>
-            {/* <NavBar /> */}
             <Routes>
-              {/* <Route path="/games/:id/play/:topic" element={<PlayGame />} /> */}
-
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/badges"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Badges />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* 未登录 / 跳转至产品界面 landing page */}
-
-              <Route
-                path="/login"
-                element={
-                  <GuestRoute>
-                    <Login />
-                  </GuestRoute>
-                }
-              />
-              <Route
-                path="/register"
-                element={
-                  <GuestRoute>
-                    <Register />
-                  </GuestRoute>
-                }
-              />
-              <Route
-                path="/tasks"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <MyTasks />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/rooms"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Rooms />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/user/:uid"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Profile />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/user"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Profile />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/user/settings"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <ProfileSettings />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tasks/add"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <AddTask />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/tasks/:id/edit"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <EditTask />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-              {/* users */}
+              <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
+              <Route path="/badges" element={<ProtectedRoute><Layout><Badges /></Layout></ProtectedRoute>} />
+              <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+              <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute><Layout><MyTasks /></Layout></ProtectedRoute>} />
+              <Route path="/rooms" element={<ProtectedRoute><Layout><Rooms /></Layout></ProtectedRoute>} />
+              <Route path="/live" element={<ProtectedRoute><Layout><Live /></Layout></ProtectedRoute>} />
+              <Route path="/user/:uid" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+              <Route path="/user" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
+              <Route path="/user/settings" element={<ProtectedRoute><Layout><ProfileSettings /></Layout></ProtectedRoute>} />
+              <Route path="/tasks/add" element={<ProtectedRoute><Layout><AddTask /></Layout></ProtectedRoute>} />
+              <Route path="/tasks/:id/edit" element={<ProtectedRoute><Layout><EditTask /></Layout></ProtectedRoute>} />
+              <Route path="/avatar" element={<ProtectedRoute><Layout><AvatarStudio /></Layout></ProtectedRoute>} />
             </Routes>
           </BrowserRouter>
         </AuthProvider>

@@ -145,6 +145,16 @@
   justify-content: space-between;
   margin-top: 20px;
 }
+.mt-card-footer-left {
+  display: flex;
+  align-items: center;
+}
+.mt-card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
 
 .mt-card-vis-badge {
   display: inline-flex;
@@ -176,6 +186,65 @@
 }
 .mt-card-edit:hover {
   color: var(--ink);
+}
+
+/* complete 버튼 */
+.mt-card-complete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.mt-card-complete-box {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--bg3);
+  color: var(--bg3);
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.mt-card-complete:hover .mt-card-complete-box {
+  border-color: var(--green);
+  color: var(--green);
+}
+.mt-card-complete-done .mt-card-complete-box {
+  border-color: var(--green);
+  background: var(--greenbg);
+  color: var(--green);
+}
+.mt-card-complete-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  transition: color 0.15s;
+}
+.mt-card-complete:hover .mt-card-complete-label {
+  color: var(--green);
+}
+.mt-card-complete-done .mt-card-complete-label {
+  color: var(--green);
+}
+
+/* date badge */
+.mt-card-date-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: rgba(239, 240, 234, 0.5);
+  white-space: nowrap;
+  margin-left: 10px;
 }
 
 /* ── urgent card ── */
@@ -243,4 +312,15 @@
   background: var(--greenl);
   animation: urgent-pulse 1.2s ease-in-out infinite;
   z-index: 1;
+}
+
+.mt-card.mt-card-done {
+  opacity: 0.45;
+  filter: grayscale(1);
+  animation: none !important;
+  background: var(--paper) !important;
+  transform: none !important;
+}
+.mt-card.mt-card-done::before {
+  display: none;
 }

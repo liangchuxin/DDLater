@@ -1,6 +1,7 @@
 import PixelRobot from "./PixelRobot";
 import { CHARS } from "./roomsData";
 import "./Rooms.css";
+import { useNavigate, useLocation } from "react-router-dom";
 
 // Group icon
 export function RoomIcon() {
@@ -71,6 +72,7 @@ function FullWidthStage({ members }) {
 }
 
 export default function RoomCard({ room }) {
+  const navigate = useNavigate();
   const isFullWidth = room.width === "w4";
   const isW3 = room.width === "w3";
   const cardClass = ["rcard", room.live ? "live" : "", room.width]
@@ -134,7 +136,11 @@ export default function RoomCard({ room }) {
   );
 
   return (
-    <div className={cardClass} style={room.empty ? { opacity: 0.5 } : {}}>
+    <div
+      className={cardClass}
+      style={room.empty ? { opacity: 0.5 } : {}}
+      onClick={() => navigate("/live")}
+    >
       <div className="rcard-header">
         <div className="rh-left">
           <span className={`rh-course ${room.courseTag}`}>{room.course}</span>

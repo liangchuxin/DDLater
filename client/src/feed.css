@@ -20,6 +20,7 @@
   --red: #b83030;
   --redbg: #fae8e8;
   --amber: #9a6c00;
+  --pixel: 'StardewValley', 'DM Mono', monospace;
 }
 
 body {

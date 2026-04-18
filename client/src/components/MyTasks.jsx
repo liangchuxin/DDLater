@@ -28,18 +28,35 @@ function ddlClass(dueDate) {
   return '';
 }
 
-function TaskCard({ task }) {
+function formatDeadlineBadge(dueDate) {
+  if (!dueDate) return '';
+  const d = new Date(dueDate);
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit', hour12: true,
+  });
+}
+
+function TaskCard({ task, onComplete }) {
   const navigate = useNavigate();
+  const [completed, setCompleted] = useState(
+    task.progressNumerator >= task.progressDenominator && task.progressDenominator > 0
+  );
+  // 变灰只跟初始 server 数据走，不随点击实时更新
+  const [greyedOut] = useState(
+    task.progressNumerator >= task.progressDenominator && task.progressDenominator > 0
+  );
+  const [localNumerator, setLocalNumerator] = useState(task.progressNumerator);
   const pct = task.progressDenominator
-    ? Math.round((task.progressNumerator / task.progressDenominator) * 100)
+    ? Math.round((localNumerator / task.progressDenominator) * 100)
     : 0;
   const pc = pct === 100 ? 'done' : pct >= 50 ? '' : pct > 0 ? 'warn' : 'urgent';
   const courseLabel = task.course?.courseCode ?? '';
-
-  const isUrgent = ddlClass(task.dueDate) === 'urgent';
+  const isDoneFromServer = greyedOut;
+  const isUrgent = !isDoneFromServer && ddlClass(task.dueDate) === 'urgent';
 
   return (
-    <div className={`mt-card${isUrgent ? ' mt-card-urgent' : ''}`}>
+    <div className={`mt-card${isUrgent ? ' mt-card-urgent' : ''}${isDoneFromServer ? ' mt-card-done' : ''}`}>
       <div className="mt-card-top">
         <div className="mt-card-name">{task.title}</div>
         <div className={`mt-card-pct ${pc}`}>{pct}%</div>
@@ -68,21 +85,48 @@ function TaskCard({ task }) {
       </div>
 
       <div className="mt-card-footer">
-        {task.hideFromClassmates ? (
-          <div className="mt-card-vis-badge">
-            <svg width="11" height="11" viewBox="0 0 12 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="6" width="10" height="7" rx="0.5" />
-              <path d="M3.5 6V4a2.5 2.5 0 015 0v2" />
+        <div className="mt-card-footer-left">
+          <button
+            className={`mt-card-complete${completed ? ' mt-card-complete-done' : ''}`}
+            onClick={async e => {
+              e.stopPropagation();
+              const newCompleted = !completed;
+              setCompleted(newCompleted);
+              setLocalNumerator(newCompleted ? task.progressDenominator : 0);
+              await fetch(`${import.meta.env.VITE_API_URL}/api/tasks/${task._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(newCompleted
+                  ? { progressNumerator: task.progressDenominator }
+                  : { progressNumerator: 0 }
+                ),
+              });
+              onComplete(task._id, newCompleted);
+            }}
+          >
+            <span className="mt-card-complete-box">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="2,7 5,10 11,3" />
+              </svg>
+            </span>
+            <span className="mt-card-complete-label">completed</span>
+          </button>
+          {task.dueDate && (
+            <div className="mt-card-date-badge">
+              {formatDeadlineBadge(task.dueDate)}
+            </div>
+          )}
+        </div>
+        <div className="mt-card-footer-right">
+          <button className="mt-card-edit" onClick={() => navigate(`/tasks/${task._id}/edit`)}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
             </svg>
-            Hidden from classmates
-          </div>
-        ) : <span />}
-        <button className="mt-card-edit" onClick={() => navigate(`/tasks/${task._id}/edit`)}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
-          </svg>
-          Edit
-        </button>
+            Edit
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -96,7 +140,15 @@ export default function MyTasks() {
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_URL}/api/tasks`, { credentials: 'include' })
       .then(res => res.json())
-      .then(data => { setTasks(data); setLoading(false); });
+      .then(data => {
+        const sorted = [...data].sort((a, b) => {
+          const aDone = a.progressNumerator >= a.progressDenominator && a.progressDenominator > 0;
+          const bDone = b.progressNumerator >= b.progressDenominator && b.progressDenominator > 0;
+          return aDone - bDone;
+        });
+        setTasks(sorted);
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -119,7 +171,9 @@ export default function MyTasks() {
           <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 13, color: 'var(--muted)' }}>No tasks yet. Add one!</div>
         ) : (
           <div className="mt-grid">
-            {tasks.map(t => <TaskCard key={t._id} task={t} />)}
+            {tasks.map(t => (
+              <TaskCard key={t._id} task={t} onComplete={() => {}} />
+            ))}
           </div>
         )}
       </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import TaskCard from "./TaskCard";
+import FeedCard from "./FeedCard";
 import RoomCard from "./RoomCard";
 import { ROOMS, ROOM_FILTERS } from "./roomsData";
 
@@ -278,7 +278,7 @@ export default function Dashboard() {
 
         <div className="grid">
           {SAMPLE_TASKS.map((t) => (
-            <TaskCard key={t.id} {...t} />
+            <FeedCard key={t.id} {...t} />
           ))}
           <div className="card card-promo">
             <PixelPromo />

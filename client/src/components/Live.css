@@ -1,0 +1,843 @@
+/* ── Live.css — scoped to .live-page ── */
+/* inherits --bg / --paper / --ink / --green from feed.css */
+
+.live-page {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  height: calc(100vh - 68px);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ── center main column ── */
+/* 宽度 ≈ canvas max-width + 左右 padding；panel 关闭时放开 cap，transition 和 panel 同步 */
+.live-main {
+  width: 100%;
+  max-width: calc((100vh - 352px) * 20 / 9 + 68px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 28px 34px 24px;
+  min-width: 0;
+  transition: max-width 0.2s ease;
+}
+
+.live-page.panel-hidden .live-main {
+  max-width: 100vw;
+}
+
+/* ── header row ── */
+/* 宽度与 canvas / members-row 保持一致；margin-bottom 和 .live-stage 的 gap 对齐 */
+.live-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+  margin: 0 auto 22px;
+  width: 100%;
+  max-width: calc((100vh - 352px) * 20 / 9);
+  flex-shrink: 0;
+  background: var(--paper);
+  --pixel-base: var(--paper);
+  --pixel-border-color: #9b9b9b;
+  --pixel-highlight: var(--bg2);
+  --pixel-shadow: rgba(0, 0, 0, 0.1);
+}
+
+.live-room-name {
+  font-family: var(--pixel);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  /* -webkit-font-smoothing: none; */
+  font-smooth: never;
+}
+
+.live-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+.live-meta-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--green);
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--greenl);
+  display: inline-block;
+  animation: blink 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ── stage wrapper: canvas 和 members-row 紧跟在 header 下方，不垂直居中 ── */
+.live-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 0;
+}
+
+/* ── canvas stage ── */
+/* aspect 在 4/3 (窄屏) 和 20/9 (宽屏) 之间浮动，height 不超 100vh - 352px */
+.live-canvas {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-width: calc((100vh - 352px) * 20 / 9);
+  max-height: calc(100vh - 352px);
+  flex-shrink: 0;
+  background: #ddeadb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto;
+  position: relative;
+  --pixel-border-color: #9b9b9b;
+  --pixel-base: #ddeadb;
+  --pixel-highlight: #c5d6c2;
+  --pixel-shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* subtle ground shadow at the bottom of the stage */
+.live-canvas::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, rgba(30, 60, 35, 0.06));
+  pointer-events: none;
+}
+
+.live-canvas-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 40px 60px 44px;
+  position: relative;
+  z-index: 1;
+}
+
+.live-canvas-figures {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  width: 100%;
+  gap: 40px;
+}
+
+.live-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  transition: opacity 0.15s;
+}
+
+.live-figure.afk {
+  opacity: 0.35;
+}
+
+.live-canvas-label {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+
+/* ── member strip below the canvas ── */
+/* outer row: scrollable cards (flex 1) + fixed overall on the right */
+/* 宽度与 canvas 保持一致 */
+.live-members-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-shrink: 0;
+  width: 100%;
+  max-width: calc((100vh - 352px) * 20 / 9);
+  margin: 0 auto;
+}
+
+.live-members {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 16px;
+  padding: 10px 0px 14px 6px;
+  margin-left: -6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.live-members::-webkit-scrollbar {
+  height: 4px;
+}
+.live-members::-webkit-scrollbar-track {
+  background: transparent;
+}
+.live-members::-webkit-scrollbar-thumb {
+  background: var(--bg3);
+}
+
+.live-member-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 16px 12px 14px;
+  background: var(--paper);
+  border: none;
+  cursor: pointer;
+  transition: transform 0.18s;
+  flex-shrink: 0;
+  position: relative;
+  min-width: 172px;
+  --pixel-border-color: #9b9b9b;
+  --pixel-base: var(--paper);
+  --pixel-highlight: var(--bg2);
+  --pixel-shadow: rgba(0, 0, 0, 0.1);
+}
+
+.live-member-card:hover {
+  transform: translateY(-2px);
+}
+
+.live-member-card.active {
+  background: var(--greenbg);
+  --pixel-border-color: var(--green);
+  --pixel-base: var(--greenbg);
+  --pixel-highlight: #d8ecd8;
+  --pixel-shadow: rgba(45, 138, 62, 0.2);
+}
+
+.live-member-card.is-self {
+  background: #f9fff8;
+  --pixel-border-color: var(--greenl);
+  --pixel-base: #f9fff8;
+  --pixel-highlight: var(--greenbg);
+  --pixel-shadow: rgba(76, 175, 98, 0.18);
+}
+
+.live-av {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg2);
+  flex-shrink: 0;
+}
+
+.live-av-img {
+  object-fit: cover;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.live-av.av-g {
+  background: var(--greenbg);
+  color: var(--green);
+}
+
+.live-member-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.live-member-pct {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.live-member-pct.done {
+  color: var(--green);
+}
+.live-member-pct.warn {
+  color: var(--amber);
+}
+.live-member-pct.urgent {
+  color: var(--red);
+}
+
+.live-member-overall-btn {
+  /* margin 匹配 .live-members 的 padding，让 overall 的可视边缘和 cards 对齐 */
+  margin: 10px 0 14px;
+  min-height: 52px; /* 匹配 card 自然高度：28px avatar + 12px*2 padding */
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: var(--paper);
+  border: none;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
+  flex-shrink: 0;
+  --pixel-border-color: #9b9b9b;
+  --pixel-base: var(--paper);
+  --pixel-highlight: var(--bg2);
+  --pixel-shadow: rgba(0, 0, 0, 0.1);
+}
+
+.live-member-overall-btn:hover {
+  color: var(--ink);
+  background: var(--bg2);
+  --pixel-base: var(--bg2);
+  --pixel-highlight: var(--bg3);
+}
+
+.live-member-overall-btn.active {
+  color: var(--green);
+  background: var(--greenbg);
+  --pixel-border-color: var(--green);
+  --pixel-base: var(--greenbg);
+  --pixel-highlight: #d8ecd8;
+  --pixel-shadow: rgba(45, 138, 62, 0.2);
+}
+
+/* ── right panel ── */
+.live-panel {
+  width: 280px;
+  max-height: calc(100vh - 194px);
+  flex-shrink: 0;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  margin: 28px 28px 28px 0;
+  transition:
+    width 0.2s ease,
+    margin-right 0.2s ease;
+  --pixel-base: #ffffff;
+  --pixel-border-color: #9b9b9b;
+  --pixel-highlight: #e7e7e7;
+  --pixel-shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* CL identity badge hanging at the top-left corner of the panel */
+.live-panel-badge {
+  position: absolute;
+  top: -16px;
+  left: -16px;
+  width: 35px;
+  height: 35px;
+  padding-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--greenbg);
+  color: var(--green);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  z-index: 2;
+  --pixel-base: var(--greenbg);
+  --pixel-border-color: #1a1a1a;
+  --pixel-highlight: #d8ecd8;
+  --pixel-shadow: rgba(45, 138, 62, 0.2);
+}
+
+.live-panel-badge-img {
+  width: 41px;
+  height: 41px;
+  object-fit: cover;
+  display: block;
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  z-index: -99;
+}
+
+.live-panel.hidden .live-panel-close {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* close button at panel top-right */
+.live-panel-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.2s ease;
+  z-index: 3;
+}
+
+.live-panel-close:hover {
+  opacity: 1;
+}
+
+.live-panel-close img {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.live-panel.hidden {
+  width: 0;
+  margin-right: 0;
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.live-panel.hidden::before {
+  display: none;
+}
+
+.live-panel.hidden .live-panel-badge {
+  display: none;
+}
+
+.live-panel-header {
+  padding: 42px 22px 32px;
+  border-bottom: 1.5px solid var(--bg2);
+  flex-shrink: 0;
+}
+
+.live-panel-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.live-panel-name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.live-panel-mode {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.live-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 22px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── task section ── */
+.live-task-section-title {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.live-task-row {
+  margin-bottom: 18px;
+}
+
+.live-task-row:last-child {
+  margin-bottom: 0;
+}
+
+.live-task-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.live-task-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.live-task-pct {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.live-task-pct-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.live-task-menu-btn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--muted);
+  opacity: 0.6;
+  transition: opacity 0.12s, color 0.12s;
+}
+
+.live-task-menu-btn:hover {
+  opacity: 1;
+  color: var(--ink);
+}
+
+.live-task-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 160px;
+  padding: 4px;
+  background: rgba(239, 240, 234, 0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 50;
+  --pixel-base: rgba(239, 240, 234, 0.92);
+  --pixel-border-color: #d8d8d0;
+  --pixel-highlight: rgba(227, 228, 220, 0.92);
+  --pixel-shadow: rgba(0, 0, 0, 0.1);
+}
+
+.live-task-menu-item {
+  width: 100%;
+  padding: 8px 12px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  text-align: left;
+  color: var(--ink2);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.live-task-menu-item:hover {
+  background: var(--bg3);
+  color: var(--ink);
+}
+
+.live-task-pct.done {
+  color: var(--green);
+}
+.live-task-pct.warn {
+  color: var(--amber);
+}
+.live-task-pct.urgent {
+  color: var(--red);
+}
+
+/* draggable slider (self panel) */
+.live-task-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: var(--bg2);
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.live-task-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  background: var(--bg2);
+}
+
+.live-task-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--green);
+  border-radius: 0;
+  cursor: pointer;
+  margin-top: -5px;
+  border: none;
+}
+
+.live-task-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--green);
+  border-radius: 0;
+  cursor: pointer;
+  border: none;
+}
+
+/* read-only bar (other members / overall) */
+.live-task-bar {
+  height: 3px;
+  background: var(--bg2);
+}
+
+.live-task-bar-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.3s ease;
+}
+
+.live-task-bar-fill.warn {
+  background: var(--amber);
+}
+.live-task-bar-fill.urgent {
+  background: var(--red);
+}
+
+/* add task button */
+.live-add-task-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 8px 0;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.live-add-task-btn:hover {
+  color: var(--green);
+}
+
+/* ── add-task modal ── */
+.live-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.live-modal {
+  width: 420px;
+  max-width: calc(100vw - 80px);
+  max-height: calc(100vh - 160px);
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  --pixel-base: var(--paper);
+  --pixel-border-color: #9b9b9b;
+  --pixel-highlight: var(--bg2);
+  --pixel-shadow: rgba(0, 0, 0, 0.2);
+}
+
+.live-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1.5px solid var(--bg2);
+  flex-shrink: 0;
+}
+
+.live-modal-title {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.live-modal-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.live-modal-close:hover {
+  opacity: 1;
+}
+
+.live-modal-close img {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.live-modal-body {
+  padding: 10px 12px 18px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.live-modal-empty {
+  padding: 24px 8px;
+  text-align: center;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.live-modal-task {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.live-modal-task:hover {
+  background: var(--bg2);
+}
+
+.live-modal-task-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.live-modal-task-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.live-modal-task-frac {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.live-modal-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.live-modal-task-dot {
+  opacity: 0.5;
+}
+
+/* ── history list ── */
+.live-history-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--bg2);
+}
+
+.live-history-item:last-child {
+  border-bottom: none;
+}
+
+.live-history-av {
+  width: 22px;
+  height: 22px;
+  font-family: "DM Mono", monospace;
+  font-size: 9px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg2);
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.live-history-av.av-g {
+  background: var(--greenbg);
+  color: var(--green);
+}
+
+.live-history-text {
+  font-size: 13px;
+  color: var(--ink2);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.live-history-text strong {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.live-history-time {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 3px;
+  letter-spacing: 0.03em;
+}

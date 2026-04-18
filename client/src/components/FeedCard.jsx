@@ -6,7 +6,7 @@ import PixelRobot from './PixelRobot';
 // wide:      span 2 columns
 // active:    green left border + light bg
 
-export default function TaskCard({
+export default function FeedCard({
   course,       // e.g. 'AIT'
   courseTag,    // CSS class e.g. 't-ait'
   bgClass,      // card-img bg e.g. 'ci-1'

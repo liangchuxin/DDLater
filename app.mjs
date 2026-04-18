@@ -8,8 +8,8 @@ import "./db.mjs";
 import authRouter from './routes/auth.mjs';
 import profileRouter from './routes/profile.mjs';
 import tasksRouter from './routes/tasks.mjs';
-
-// 数据库连接
+import roomsRouter from './routes/rooms.mjs';
+import avatarsRouter from './routes/avatars.mjs';
 
 mongoose.connect(process.env.DSN).then(() => console.log("mongodb connected"));
 
@@ -33,10 +33,8 @@ app.use(cors({
   credentials: true,
 }));
 
-// middleware
-
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.use(
   session({
@@ -48,7 +46,7 @@ app.use(
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 天
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     },
   }),
 );
@@ -56,6 +54,8 @@ app.use(
 app.use('/api/auth', authRouter);
 app.use('/api/profile', profileRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/rooms', roomsRouter);
+app.use('/api/avatars', avatarsRouter);
 
 app.get('/api/universities', async (req, res) => {
   const { name } = req.query;

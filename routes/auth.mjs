@@ -61,7 +61,7 @@ router.get("/me", async (req, res) => {
   if (!profile) {
     return res.status(404).json({ error: "Profile not found." });
   }
-  return res.json({ _id: req.session.userId, displayName: profile.displayName, uid: profile.uid });
+  return res.json({ _id: req.session.userId, displayName: profile.displayName, uid: profile.uid, avatar: profile.avatar ?? null });
 });
 
 router.post("/logout", (req, res) => {

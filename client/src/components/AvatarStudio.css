@@ -1,0 +1,224 @@
+.as-wrap {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+/* ── 左栏：上传 + 预览 ── */
+.as-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.as-upload-zone {
+  border: 1.5px dashed var(--bg3);
+  background: var(--paper);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  gap: 10px;
+  padding: 28px;
+}
+.as-upload-zone:hover {
+  border-color: var(--green);
+  background: var(--greenbg);
+}
+.as-upload-zone img {
+  max-height: 140px;
+  max-width: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.as-upload-hint {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.as-preview-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.as-preview-box {
+  background: var(--paper);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+.as-preview-label {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.as-preview-box canvas {
+  image-rendering: pixelated;
+  display: block;
+}
+
+.as-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.as-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.as-name-input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1.5px solid var(--bg3);
+  background: var(--paper);
+  font-family: "DM Mono", monospace;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.as-name-input:focus {
+  border-color: var(--green);
+}
+
+/* ── 按钮 ── */
+.as-btn {
+  padding: 9px 20px;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.as-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.as-btn-primary {
+  background: var(--green);
+  color: #fff;
+}
+.as-btn-primary:hover:not(:disabled) {
+  background: var(--greenl);
+}
+.as-btn-ghost {
+  background: var(--bg2);
+  color: var(--ink2);
+}
+.as-btn-ghost:hover:not(:disabled) {
+  background: var(--bg3);
+}
+.as-btn-danger {
+  background: var(--redbg);
+  color: var(--red);
+}
+.as-btn-danger:hover:not(:disabled) {
+  background: #f5d0d0;
+}
+
+.as-msg {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--green);
+  padding: 8px 0;
+}
+.as-msg.error {
+  color: var(--red);
+}
+
+/* ── 右栏：已有小人列表 ── */
+.as-right {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.as-list-title {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--bg3);
+}
+
+.as-avatar-item {
+  background: var(--paper);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  border: 1.5px solid transparent;
+  transition: border-color 0.12s;
+}
+.as-avatar-item.active {
+  border-color: var(--green);
+}
+.as-avatar-active-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  background: var(--greenbg);
+  color: var(--green);
+}
+.as-avatar-name {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--ink2);
+  letter-spacing: 0.04em;
+}
+.as-avatar-meta {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.as-avatar-thumb {
+  display: flex;
+  justify-content: center;
+}
+.as-avatar-thumb canvas {
+  image-rendering: pixelated;
+  display: block;
+}
+.as-avatar-btns {
+  display: flex;
+  gap: 7px;
+}
+.as-avatar-btns .as-btn {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 12px;
+}
+
+.as-empty {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px 0;
+}
