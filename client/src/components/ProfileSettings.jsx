@@ -38,18 +38,69 @@ export default function ProfileSettings() {
       });
   }, []);
 
-  const handleAvatarChange = async () => {
-    const url = window.prompt("Paste avatar URL:");
-    if (!url) return;
+  const fileInputRef = useRef(null);
+
+  // resize + center crop 到 256×256,控制 base64 在 ~20KB,防止 Mongo 16MB 文档限
+  const fileToAvatarDataURL = async (file) => {
+    const imgUrl = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => {
+        const image = new Image();
+        image.onload = () => res(image);
+        image.onerror = () => rej(new Error("Invalid image"));
+        image.src = imgUrl;
+      });
+      const OUT = 256;
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2;
+      const sy = (img.height - side) / 2;
+      const canvas = document.createElement("canvas");
+      canvas.width = OUT;
+      canvas.height = OUT;
+      canvas.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, OUT, OUT);
+      return canvas.toDataURL("image/jpeg", 0.85);
+    } finally {
+      URL.revokeObjectURL(imgUrl);
+    }
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarFile = async (e) => {
+    const file = e.target.files?.[0];
+    // reset 让同一张图再选一次也能触发 change
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setMessage("Please choose an image file.");
+      setIsError(true);
+      return;
+    }
+    let dataUrl;
+    try {
+      dataUrl = await fileToAvatarDataURL(file);
+    } catch (err) {
+      setMessage("Could not read image.");
+      setIsError(true);
+      return;
+    }
     const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ avatar: url }),
+      body: JSON.stringify({ avatar: dataUrl }),
     });
     if (res.ok) {
       const data = await res.json();
       setProfile(data);
+      setMessage("Avatar updated.");
+      setIsError(false);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setMessage(data.error || "Failed to update avatar.");
+      setIsError(true);
     }
   };
 
@@ -151,11 +202,18 @@ export default function ProfileSettings() {
           <div className="ps-avatar-row">
             <div className="ps-avatar-wrap">
               <img src={profile.avatar || defaultAvatar} alt="avatar" />
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={handleAvatarFile}
+              />
               {/* 右上角编辑按鈕 */}
               <div
                 className="ps-avatar-edit"
                 title="Change avatar"
-                onClick={handleAvatarChange}
+                onClick={handleAvatarClick}
               >
                 <svg
                   width="11"
