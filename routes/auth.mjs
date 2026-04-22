@@ -2,10 +2,12 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { customAlphabet } from "nanoid";
+import { loadDefaultAvatarData } from "../scripts/default-avatar-loader.mjs";
 
 const router = express.Router();
 const User = mongoose.model("User");
 const Profile = mongoose.model("Profile");
+const Avatar = mongoose.model("Avatar");
 
 const generateUID = customAlphabet("0123456789", 11);
 
@@ -33,6 +35,25 @@ router.post("/register", async (req, res) => {
   const uid = await uniqueUID();
   const profile = new Profile({ user: user._id, displayName, uid });
   await profile.save();
+
+  // 给新用户创建一份默认 avatar 拷贝,并设为 activeAvatar
+  try {
+    const defaultData = loadDefaultAvatarData();
+    const avatar = await Avatar.create({
+      user: user._id,
+      name: defaultData.name,
+      sourceImageUrl: defaultData.sourceImageUrl,
+      avatarGrid: defaultData.avatarGrid,
+      avatarCuts: defaultData.avatarCuts,
+      isDefault: true,
+    });
+    profile.activeAvatar = avatar._id;
+    await profile.save();
+  } catch (err) {
+    // default-avatar-source.json 没放就跳过,不阻断注册
+    console.warn("[register] failed to create default avatar:", err.message);
+  }
+
   return res.json({ message: "Registration success." });
 });
 

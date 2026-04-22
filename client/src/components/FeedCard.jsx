@@ -1,4 +1,4 @@
-import PixelRobot from './PixelRobot';
+import FeedAvatar from './FeedAvatar';
 
 // dotStatus: 'on' | 'recent' | 'off'
 // ddlClass:  'ddl-u' | 'ddl-s' | 'ddl-o'
@@ -11,8 +11,7 @@ export default function FeedCard({
   courseTag,    // CSS class e.g. 't-ait'
   bgClass,      // card-img bg e.g. 'ci-1'
   dotStatus,    // 'on' | 'recent' | 'off'
-  robot,        // { head, body, leg } colors
-  robot2,       // optional second ghost robot (wide cards)
+  avatarGrid,   // 用户自己的 avatar grid
   initials,     // avatar initials e.g. 'CL'
   avClass = '', // extra av class e.g. 'av-g'
   username,
@@ -33,8 +32,7 @@ export default function FeedCard({
       <div className={`card-img ${bgClass}`}>
         <span className={`img-tag ${courseTag}`}>{course}</span>
         <div className={`img-dot ${dotClass}`}></div>
-        <PixelRobot {...robot} />
-        {robot2 && <PixelRobot {...robot2} width={56} height={72} opacity={0.28} />}
+        <FeedAvatar grid={avatarGrid} />
       </div>
       <div className="card-body">
         <div className="card-who">

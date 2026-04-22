@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import "./MyTasks.css";
+import "../styles/MyTasks.css";
 
 function formatDueDate(dueDate) {
   if (!dueDate) return '';

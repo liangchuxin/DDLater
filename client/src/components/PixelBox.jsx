@@ -6,7 +6,7 @@
 //   their pseudo elements. Consumer sets the colour variables and a matching
 //   background; PixelBox owns the rest.
 
-import './PixelBox.css';
+import '../styles/PixelBox.css';
 
 export default function PixelBox({
   as: Tag = 'div',

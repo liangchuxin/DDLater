@@ -1,249 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import FeedCard from "./FeedCard";
-import RoomCard from "./RoomCard";
-import { ROOMS, ROOM_FILTERS } from "./roomsData";
+import StudyRoomsSection from "./StudyRoomsSection";
+import { useNavigate } from "react-router-dom";
 
-// mock data
-const SAMPLE_TASKS = [
-  // ROW 1
-  {
-    id: 1,
-    course: "AIT",
-    courseTag: "t-ait",
-    bgClass: "ci-1",
-    dotStatus: "on",
-    robot: { head: "#265c2e", body: "#37753f", leg: "#1e4824" },
-    initials: "CL",
-    avClass: "av-g",
-    username: "celia",
-    dept: "NYU CS",
-    task: "Milestone 3",
-    progressText: "3 / 8",
-    percent: 35,
-    pfClass: "pf-g",
-    ddlText: "6d left",
-    ddlClass: "ddl-s",
-    active: true,
-  },
-  {
-    id: 2,
-    course: "SE",
-    courseTag: "t-se",
-    bgClass: "ci-2",
-    dotStatus: "on",
-    robot: { head: "#5e3015", body: "#a05530", leg: "#4a2410" },
-    initials: "MX",
-    username: "mingxuan",
-    dept: "NYU CS",
-    task: "Project 3 — Ghosty",
-    progressText: "6 / 10",
-    percent: 60,
-    pfClass: "pf-y",
-    ddlText: "due in 14h",
-    ddlClass: "ddl-u",
-    active: true,
-  },
-  {
-    id: 3,
-    course: "BD",
-    courseTag: "t-bd",
-    bgClass: "ci-3",
-    dotStatus: "recent",
-    robot: { head: "#143050", body: "#205080", leg: "#102440" },
-    initials: "JW",
-    username: "jingwen",
-    dept: "NYU DS",
-    task: "BD Final Project",
-    progressText: "8 / 10",
-    percent: 80,
-    pfClass: "pf-g",
-    ddlText: "12d left",
-    ddlClass: "ddl-o",
-  },
-  {
-    id: 4,
-    course: "WD",
-    courseTag: "t-wd",
-    bgClass: "ci-4",
-    dotStatus: "off",
-    robot: { head: "#3c1455", body: "#6830a0", leg: "#2e0e40" },
-    initials: "SY",
-    username: "siyu",
-    dept: "NYU Math",
-    task: "HW5 — Responsive",
-    progressText: "done ✓",
-    percent: 100,
-    pfClass: "pf-g",
-    ddlText: "submitted",
-    ddlClass: "ddl-o",
-  },
-  // ROW 2 — wide LEFT
-  {
-    id: 5,
-    course: "SE",
-    courseTag: "t-se",
-    bgClass: "ci-6",
-    dotStatus: "on",
-    robot: { head: "#521815", body: "#8e3530", leg: "#3e100e" },
-    robot2: { head: "#443010", body: "#785030", leg: "#342008" },
-    initials: "RZ",
-    avClass: "av-r",
-    username: "ruoze",
-    dept: "NYU CS",
-    task: "Project 3 — Ghosty Package",
-    progressText: "2 / 10",
-    percent: 20,
-    pfClass: "pf-r",
-    ddlText: "due tonight · 23:59",
-    ddlClass: "ddl-u",
-    wide: true,
-    active: true,
-  },
-  {
-    id: 6,
-    course: "AIT",
-    courseTag: "t-ait",
-    bgClass: "ci-5",
-    dotStatus: "recent",
-    robot: { head: "#14382a", body: "#326050", leg: "#0e2a1e" },
-    initials: "HY",
-    avClass: "av-g",
-    username: "haoyue",
-    dept: "NYU CS",
-    task: "HW#7 — MongoDB",
-    progressText: "halfway",
-    percent: 50,
-    pfClass: "pf-y",
-    ddlText: "3d left",
-    ddlClass: "ddl-s",
-    active: true,
-  },
-  {
-    id: 7,
-    course: "BD",
-    courseTag: "t-bd",
-    bgClass: "ci-7",
-    dotStatus: "on",
-    robot: { head: "#103830", body: "#206058", leg: "#0a2820" },
-    initials: "WK",
-    username: "wenkai",
-    dept: "NYU CS",
-    task: "HW6 — Spark ML",
-    progressText: "7 / 10",
-    percent: 70,
-    pfClass: "pf-y",
-    ddlText: "tonight",
-    ddlClass: "ddl-u",
-    active: true,
-  },
-  // ROW 3 — wide RIGHT
-  {
-    id: 8,
-    course: "LIFE",
-    courseTag: "t-li",
-    bgClass: "ci-8",
-    dotStatus: "recent",
-    robot: { head: "#380e30", body: "#602858", leg: "#280820" },
-    initials: "LT",
-    username: "liting",
-    dept: "NYU Econ",
-    task: "Grad School Essay",
-    progressText: "draft 2 / 4",
-    percent: 45,
-    pfClass: "pf-g",
-    ddlText: "5d left",
-    ddlClass: "ddl-s",
-  },
-  {
-    id: 9,
-    course: "BD",
-    courseTag: "t-bd",
-    bgClass: "ci-9",
-    dotStatus: "off",
-    robot: { head: "#184040", body: "#307060", leg: "#102828" },
-    initials: "SN",
-    username: "sinda",
-    dept: "NYU DS",
-    task: "AO3 Data Pipeline",
-    progressText: "not started",
-    percent: 0,
-    pfClass: "pf-r",
-    ddlText: "5d left",
-    ddlClass: "ddl-s",
-  },
-  {
-    id: 10,
-    course: "WD",
-    courseTag: "t-wd",
-    bgClass: "ci-b",
-    dotStatus: "recent",
-    robot: { head: "#503020", body: "#907050", leg: "#382010" },
-    robot2: { head: "#3c1455", body: "#6830a0", leg: "#2e0e40" },
-    initials: "LR",
-    username: "laura",
-    dept: "NYU CDS",
-    task: "WD Final Project",
-    progressText: "5.5 / 10",
-    percent: 55,
-    pfClass: "pf-g",
-    ddlText: "4d left",
-    ddlClass: "ddl-s",
-    wide: true,
-  },
-  // ROW 4
-  {
-    id: 11,
-    course: "SE",
-    courseTag: "t-se",
-    bgClass: "ci-a",
-    dotStatus: "off",
-    robot: { head: "#303050", body: "#505090", leg: "#202038" },
-    initials: "KL",
-    username: "kairis",
-    dept: "NYU CS",
-    task: "SE Quiz prep",
-    progressText: "not started",
-    percent: 0,
-    pfClass: "pf-r",
-    ddlText: "tomorrow",
-    ddlClass: "ddl-u",
-  },
-  {
-    id: 12,
-    course: "AIT",
-    courseTag: "t-ait",
-    bgClass: "ci-c",
-    dotStatus: "off",
-    robot: { head: "#2a4820", body: "#487040", leg: "#1e3418" },
-    initials: "ZY",
-    avClass: "av-g",
-    username: "ziyang",
-    dept: "NYU CS",
-    task: "HW#6 — Sessions",
-    progressText: "9 / 10",
-    percent: 90,
-    pfClass: "pf-g",
-    ddlText: "submitted",
-    ddlClass: "ddl-o",
-  },
-  {
-    id: 13,
-    course: "AIT",
-    courseTag: "t-ait",
-    bgClass: "ci-5",
-    dotStatus: "off",
-    robot: { head: "#3a2010", body: "#704030", leg: "#281408" },
-    initials: "ET",
-    username: "ethan",
-    dept: "NYU CS",
-    task: "HW#7 — Mongoose",
-    progressText: "not started",
-    percent: 0,
-    pfClass: "pf-r",
-    ddlText: "3d left",
-    ddlClass: "ddl-u",
-  },
-];
+const API = import.meta.env.VITE_API_URL;
 
 const TASK_FILTERS = [
   "Everyone",
@@ -253,9 +13,190 @@ const TASK_FILTERS = [
   "0% Done",
 ];
 
+// ── layout template ────────────────────────────────────────────
+// 每 10 个 card 一轮循环: 4 个 w1 + (w2,w1,w1) + (w1,w1,w2)
+const WIDTHS = [1, 1, 1, 1, 2, 1, 1, 1, 1, 2];
+
+const CI_CLASSES = [
+  "ci-1", "ci-2", "ci-3", "ci-4", "ci-5", "ci-6",
+  "ci-7", "ci-8", "ci-9", "ci-a", "ci-b", "ci-c",
+];
+
+const COURSE_TAG_OPTIONS = ["t-ait", "t-se", "t-wd", "t-bd", "t-li"];
+
+// 常见 dept code 的明确缩写。查不到就保留原始 dept。
+const DEPT_ALIASES = {
+  CSCI: "CS",
+  COMP: "CS",
+};
+
+// "CSCI-UA 467" -> "CS 467"
+// "MATH-UA 120" -> "MATH 120"
+// "AIT"         -> "AIT"
+function formatCourseCode(code) {
+  if (!code) return "";
+  const m = code.match(/^\s*([A-Za-z]+)(?:-[A-Za-z]+)?\s*(\d+)?/);
+  if (!m) return code.toUpperCase();
+  const dept = m[1].toUpperCase();
+  const num = m[2];
+  const short = DEPT_ALIASES[dept] ?? dept;
+  return num ? `${short} ${num}` : short;
+}
+
+function abbreviateSchool(school) {
+  if (!school) return "";
+  const trimmed = school.trim();
+  // 已经全是大写短名 (比如 "NYU") 就不动
+  if (/^[A-Z]{2,6}$/.test(trimmed)) return trimmed;
+  // 多词: 取每个词首字母大写
+  const words = trimmed.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
+  if (words.length >= 2) return words.map((w) => w[0].toUpperCase()).join("");
+  // 单词: 原样返回
+  return trimmed;
+}
+
+function hashString(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function getInitials(name) {
+  const trimmed = (name || "").trim();
+  if (!trimmed) return "??";
+  const parts = trimmed.split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function isDueToday(task) {
+  if (!task.dueDate) return false;
+  const due = new Date(task.dueDate);
+  const now = new Date();
+  const diffMs = due - now;
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  // 今天到期 / 24h 内 / overdue 都算
+  return diffDays < 1;
+}
+
+function taskToFeedCardProps(task, idx) {
+  const profile = task.authorProfile || {};
+  const course = task.course;
+  const activeAvatar = profile.activeAvatar;
+  const avatarGrid = activeAvatar?.avatarGrid ?? null;
+
+  const courseCode = course?.courseCode ?? "LIFE";
+  const courseTag = course
+    ? COURSE_TAG_OPTIONS[hashString(courseCode) % COURSE_TAG_OPTIONS.length]
+    : "t-li";
+  const courseShort = course ? formatCourseCode(courseCode) : "LIFE";
+
+  const bgClass = CI_CLASSES[idx % CI_CLASSES.length];
+
+  const displayName = profile.displayName || "anonymous";
+  const initials = getInitials(displayName);
+  const dept = [abbreviateSchool(profile.school), profile.major].filter(Boolean).join(" ");
+
+  // progress
+  const num = task.progressNumerator ?? 0;
+  const den = Math.max(task.progressDenominator ?? 1, 1);
+  const percent = Math.min(100, Math.round((num / den) * 100));
+  const done = num >= den;
+  let progressText;
+  if (done) progressText = "done ✓";
+  else if (num === 0) progressText = "not started";
+  else progressText = `${num} / ${den}`;
+
+  let pfClass = "pf-r";
+  if (percent >= 80) pfClass = "pf-g";
+  else if (percent >= 40) pfClass = "pf-y";
+
+  // deadline
+  let ddlText = "no deadline";
+  let ddlClass = "ddl-o";
+  if (done) {
+    ddlText = "submitted";
+    ddlClass = "ddl-o";
+  } else if (task.dueDate) {
+    const due = new Date(task.dueDate);
+    const now = new Date();
+    const diffMs = due - now;
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    if (diffMs < 0) {
+      ddlText = "overdue";
+      ddlClass = "ddl-u";
+    } else if (diffDays < 1) {
+      const hrs = Math.max(1, Math.round(diffMs / (1000 * 60 * 60)));
+      ddlText = `due in ${hrs}h`;
+      ddlClass = "ddl-u";
+    } else if (diffDays < 7) {
+      ddlText = `${Math.ceil(diffDays)}d left`;
+      ddlClass = "ddl-s";
+    } else {
+      ddlText = `${Math.ceil(diffDays)}d left`;
+      ddlClass = "ddl-o";
+    }
+  }
+
+  const wide = WIDTHS[idx % WIDTHS.length] === 2;
+
+  return {
+    course: courseShort,
+    courseTag,
+    bgClass,
+    dotStatus: task.authorInRoom ? "on" : "off",
+    avatarGrid,
+    initials,
+    username: displayName,
+    dept,
+    task: task.title,
+    progressText,
+    percent,
+    pfClass,
+    ddlText,
+    ddlClass,
+    wide,
+    active: false,
+  };
+}
+
 export default function Dashboard() {
   const [taskFilter, setTaskFilter] = useState("Everyone");
-  const [roomFilter, setRoomFilter] = useState("All Rooms");
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/tasks/feed`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          if (!cancelled) setTasks([]);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) setTasks(Array.isArray(data) ? data : []);
+      } catch {
+        if (!cancelled) setTasks([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    if (taskFilter === "Due Today") return tasks.filter(isDueToday);
+    if (taskFilter === "0% Done")
+      return tasks.filter((t) => (t.progressNumerator ?? 0) === 0);
+    // Everyone / My School / My Course → 先全部 (后两个以后接)
+    return tasks;
+  }, [tasks, taskFilter]);
 
   return (
     <main className="main">
@@ -277,10 +218,31 @@ export default function Dashboard() {
         </div>
 
         <div className="grid">
-          {SAMPLE_TASKS.map((t) => (
-            <FeedCard key={t.id} {...t} />
+          {!loading && filtered.length === 0 && (
+            <div
+              className="feed-empty"
+              style={{
+                gridColumn: "span 4",
+                padding: "48px 0",
+                textAlign: "center",
+                fontFamily: "DM Mono, monospace",
+                fontSize: 14,
+                color: "var(--muted)",
+                letterSpacing: "0.06em",
+              }}
+            >
+              No tasks yet.
+            </div>
+          )}
+
+          {filtered.map((t, idx) => (
+            <FeedCard
+              key={t._id}
+              {...taskToFeedCardProps(t, idx)}
+            />
           ))}
-          <div className="card card-promo">
+
+          <div className="card card-promo" onClick={() => navigate("./avatar")}>
             <PixelPromo />
             <div className="promo-title">
               Get your
@@ -292,54 +254,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Study Rooms ── */}
-        <div className="rooms-page">
-          <div className="sec-head">
-            <div className="sec-title">
-              Study Rooms · join someone and get it done
-            </div>
-          </div>
-          <div className="filter-bar">
-            {ROOM_FILTERS.map((f) => (
-              <button
-                key={f}
-                className={[
-                  "chip",
-                  roomFilter === f ? "on" : "",
-                  f.startsWith("🔥") ? "fire" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setRoomFilter(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-          <div className="rooms-grid">
-            {ROOMS.map((room) => (
-              <RoomCard key={room.id} room={room} />
-            ))}
-            <div className="rcard rcard-create">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                style={{ color: "var(--muted)" }}
-              >
-                <line x1="10" y1="4" x2="10" y2="16" />
-                <line x1="4" y1="10" x2="16" y2="10" />
-              </svg>
-              <div className="rcard-create-label">Create a room</div>
-              <div className="rcard-create-sub">
-                Invite people working on the same thing
-              </div>
-            </div>
-          </div>
-        </div>
+        <StudyRoomsSection />
       </div>
     </main>
   );

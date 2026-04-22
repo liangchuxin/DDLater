@@ -129,16 +129,18 @@ export function randomizeAnimConfig(base, jitter = 0.3) {
 }
 
 // transparent=true 时跳过棋盘格背景
-export function startAnimation(canvas, grid, cfg, maxSize = 260, transparent = false) {
+// maxRow: 可选，只渲染 grid[0..maxRow]，超过的行不打。用于家具遮挡身体下半的场景。
+export function startAnimation(canvas, grid, cfg, maxSize = 260, transparent = false, maxRow = null) {
   const { cuts, amp, stepFrames, gapAB, gapBC, holdFrames } = cfg;
   const M = grid.length, N = grid[0]?.length ?? 0;
   if (!M || !N) return () => {};
+  const effectiveM = maxRow != null ? Math.min(M, maxRow + 1) : M;
   const cs = Math.max(1, Math.floor(maxSize / Math.max(N, M)));
   canvas.width = N * cs;
-  canvas.height = (M + amp * 2 + 4) * cs;
+  canvas.height = (effectiveM + amp * 2 + 4) * cs;
   let t = 0, raf = 0;
   const loop = () => {
-    _renderFrame(canvas, grid, N, M, cuts, t++, amp, stepFrames, gapAB, gapBC, holdFrames, cs, transparent);
+    _renderFrame(canvas, grid, N, effectiveM, cuts, t++, amp, stepFrames, gapAB, gapBC, holdFrames, cs, transparent);
     raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);

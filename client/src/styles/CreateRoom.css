@@ -1,0 +1,174 @@
+/* Create Room page — simple centered form in a PixelBox */
+
+.create-room-page {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 48px 24px;
+  min-height: 100%;
+}
+
+.create-room-card {
+  width: 100%;
+  max-width: 560px;
+  padding: 32px 36px;
+  --pixel-base: #f5f4ee;
+  --pixel-highlight: #ffffff;
+  --pixel-border-color: #2d2d2a;
+  --pixel-shadow: rgba(45, 45, 42, 0.18);
+  background: var(--pixel-base);
+}
+
+.create-room-title {
+  font-family: "StardewValley", "DM Mono", monospace;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+  color: var(--ink, #1a1a1a);
+}
+
+.create-room-sub {
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  color: var(--muted, #777);
+  margin: 0 0 24px;
+  line-height: 1.5;
+}
+
+.create-room-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.create-room-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.create-room-label {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted, #777);
+}
+
+.create-room-input {
+  font-family: "DM Sans", sans-serif;
+  font-size: 15px;
+  padding: 10px 12px;
+  border: 1.5px solid #2d2d2a;
+  background: #fff;
+  outline: none;
+  border-radius: 0;
+}
+.create-room-input:focus {
+  border-color: var(--green, #2d8a3e);
+}
+
+.create-room-bg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.create-room-bg-option {
+  padding: 0;
+  border: 2px solid transparent;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  transition: border-color 0.15s ease;
+}
+.create-room-bg-option.active {
+  border-color: var(--green, #2d8a3e);
+}
+
+.create-room-bg-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.create-room-bg-caption {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--ink, #1a1a1a);
+}
+
+.create-room-error {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: #a33;
+  background: #fdecec;
+  padding: 8px 10px;
+  border: 1px solid #e3a;
+}
+
+.create-room-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.create-room-btn {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  padding: 10px 20px;
+  border: 1.5px solid #2d2d2a;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.create-room-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.create-room-btn:not(:disabled):active {
+  transform: translateY(1px);
+}
+.create-room-btn.cancel {
+  background: #fff;
+  color: var(--ink, #1a1a1a);
+}
+.create-room-btn.primary {
+  background: var(--green, #2d8a3e);
+  color: #fff;
+  border-color: #1f5e2a;
+}
+
+/* ── Rejected 态：红色配色 ── */
+.create-room-card-rejected {
+  --pixel-border-color: #c44;
+  --pixel-shadow: rgba(196, 68, 68, 0.22);
+}
+.create-room-title-rejected {
+  color: #c44;
+}
+
+/* ── Join modal: 覆盖全屏半透明背景 + 居中的 card ── */
+.join-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 24px;
+}
+.join-modal-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+}

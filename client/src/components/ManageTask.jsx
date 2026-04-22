@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import SchoolSearch from "./SchoolSearch";
 import CourseSearch from "./CourseSearch";
-import "./ManageTask.css";
+import "../styles/ManageTask.css";
 
 const VISIBILITY_OPTIONS = [
   { value: "public", label: "Visible to all" },

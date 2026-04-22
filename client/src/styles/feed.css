@@ -96,6 +96,23 @@ body {
   font-size: 14px;
   color: var(--green);
 }
+.h-join-btn {
+  margin-left: auto;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  color: var(--green);
+  background: var(--paper);
+  border: 1.5px solid var(--green);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.h-join-btn:hover {
+  background: var(--green);
+  color: #fff;
+}
 .live-sq {
   width: 8px;
   height: 8px;
@@ -125,6 +142,8 @@ body {
   position: sticky;
   top: 68px;
   height: calc(100vh - 68px);
+  /* sticky 创建 stacking context；显式设高 z-index 让 sidebar 整体（含 tooltip）凌驾于 main 内容 */
+  z-index: 50;
 }
 .nav-item {
   width: 76px;
@@ -163,7 +182,7 @@ body {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s;
-  z-index: 200;
+  z-index: 9999;
 }
 .nav-item:hover::after {
   opacity: 1;

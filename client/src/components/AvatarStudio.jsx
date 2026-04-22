@@ -7,7 +7,7 @@ import {
   defaultCuts,
   DEFAULT_ANIM_CONFIG,
 } from "../utils/pixelChar";
-import "./AvatarStudio.css";
+import "../styles/AvatarStudio.css";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -137,10 +137,16 @@ export default function AvatarStudio() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this character?")) return;
-    await fetch(`${API}/api/avatars/${id}`, {
+    const res = await fetch(`${API}/api/avatars/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setMsg(data.error || "Delete failed.");
+      setIsError(true);
+      return;
+    }
     loadAvatars();
   };
 
@@ -214,9 +220,11 @@ export default function AvatarStudio() {
 
             {avatars.map((av) => (
               <div key={av._id} className={`as-avatar-item${activeAvatarId?.toString() === av._id ? " active" : ""}`}>
-                {activeAvatarId?.toString() === av._id && (
+                {activeAvatarId?.toString() === av._id ? (
                   <span className="as-avatar-active-tag">active</span>
-                )}
+                ) : av.isDefault ? (
+                  <span className="as-avatar-default-tag">default</span>
+                ) : null}
                 <div className="as-avatar-thumb">
                   <AvatarThumb grid={av.avatarGrid} size={80} />
                 </div>
@@ -230,9 +238,11 @@ export default function AvatarStudio() {
                       Use
                     </button>
                   )}
-                  <button className="as-btn as-btn-danger" onClick={() => handleDelete(av._id)}>
-                    Delete
-                  </button>
+                  {!av.isDefault && (
+                    <button className="as-btn as-btn-danger" onClick={() => handleDelete(av._id)}>
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

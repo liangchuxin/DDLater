@@ -1,15 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import defaultAvatar from "../assets/default-avatar.png";
-import "../Profile.css";
+import PixelBox from "./PixelBox";
+import "../styles/Profile.css";
 
-// mock badges — 之后从 API 取
-const MOCK_BADGES = [
-  "submitted 1 min before due",
-  "0% at midnight warrior",
-  "3pm club founding member",
-];
+const API = import.meta.env.VITE_API_URL;
 
 export default function Profile() {
   const { currentUser } = useAuth();
@@ -17,17 +13,35 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
 
-  // 如果有 uid 参数就拉对应用户，否则拉自己
   const isOwnProfile = !uid || uid === currentUser?.uid;
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async () => {
     const url = uid
-      ? `${import.meta.env.VITE_API_URL}/api/profile/${uid}`
-      : `${import.meta.env.VITE_API_URL}/api/profile`;
-    fetch(url, { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setProfile(data));
+      ? `${API}/api/profile/${uid}`
+      : `${API}/api/profile`;
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) return;
+    const data = await res.json();
+    setProfile(data);
   }, [uid]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const handleDeleteRoom = async (roomId, roomName) => {
+    if (!window.confirm(`Delete room "${roomName}"?`)) return;
+    const res = await fetch(`${API}/api/rooms/${roomId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Failed to delete room.");
+      return;
+    }
+    fetchProfile();
+  };
 
   if (!profile)
     return (
@@ -46,7 +60,7 @@ export default function Profile() {
     );
 
   // 头像首字母 fallback
-  const initials = (profile.displayName || currentUser.username || "?")
+  const initials = (profile.displayName || currentUser?.username || "?")
     .split(" ")
     .map((w) => w[0].toUpperCase())
     .slice(0, 2)
@@ -60,10 +74,8 @@ export default function Profile() {
     .filter(Boolean)
     .join(" · ");
 
-  // mock 课程 — 之后从 API 取
-  const courses = profile.courses?.length
-    ? profile.courses
-    : ["CSCI-UA 467", "CSCI-UA 474", "CSCI-UA 476", "CSCI-UA 4"];
+  const courses = profile.courses ?? [];
+  const ownedRooms = profile.ownedRooms ?? [];
 
   return (
     <main className="main">
@@ -78,9 +90,8 @@ export default function Profile() {
             )}
           </div>
           <div className="profile-hero-info">
-            {/* 如果当前页面 uid等同于当前登录用户 */}
             <div className="profile-name">
-              {profile.displayName || currentUser.username}
+              {profile.displayName || currentUser?.username}
             </div>
             {schoolLine && <div className="profile-school">{schoolLine}</div>}
           </div>
@@ -96,44 +107,60 @@ export default function Profile() {
 
         {/* ── Stats ── */}
         <div className="profile-stats">
-          <div className="profile-stat">
-            <div className="profile-stat-value">{profile.taskCount ?? 12}</div>
+          <PixelBox variant="retro" className="profile-stat">
+            <div className="profile-stat-value">{profile.daysOnDDLater ?? "—"}</div>
+            <div className="profile-stat-label">Days on DDLater</div>
+          </PixelBox>
+          <PixelBox variant="retro" className="profile-stat">
+            <div className="profile-stat-value">{profile.taskCount ?? "—"}</div>
             <div className="profile-stat-label">Tasks Logged</div>
-          </div>
-          <div className="profile-stat">
-            <div className="profile-stat-value">{profile.roomCount ?? 4}</div>
+          </PixelBox>
+          <PixelBox variant="retro" className="profile-stat">
+            <div className="profile-stat-value">{profile.roomCount ?? "—"}</div>
             <div className="profile-stat-label">Rooms Joined</div>
-          </div>
-          <div className="profile-stat">
-            <div className="profile-stat-value">avg 10 pm</div>
-            <div className="profile-stat-label">When Started</div>
-          </div>
+          </PixelBox>
         </div>
 
-        {/* ── My Courses + Badges ── */}
+        {/* ── My Courses + My Rooms ── */}
         <div className="profile-grid">
           <div className="profile-panel">
             <div className="profile-panel-title">My Courses</div>
-            <div className="profile-courses">
-              {courses.map((c) => (
-                <div key={c} className="profile-course-item">
-                  <div className="profile-course-dot" />
-                  <div className="profile-course-name">{c}</div>
-                </div>
-              ))}
-            </div>
+            {courses.length === 0 ? (
+              <div className="profile-empty">No courses yet</div>
+            ) : (
+              <div className="profile-courses">
+                {courses.map((c) => (
+                  <div key={c} className="profile-course-item">
+                    <div className="profile-course-dot" />
+                    <div className="profile-course-name">{c}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="profile-panel">
-            <div className="profile-panel-title">Badges</div>
-            {MOCK_BADGES.length === 0 ? (
-              <div className="profile-empty">No badges yet</div>
+            <div className="profile-panel-title">My Rooms</div>
+            {ownedRooms.length === 0 ? (
+              <div className="profile-empty">No rooms created yet</div>
             ) : (
-              <div className="profile-badges">
-                {MOCK_BADGES.map((b) => (
-                  <div key={b} className="profile-badge-item">
-                    <div className="profile-badge-dash">—</div>
-                    <div className="profile-badge-text">{b}</div>
+              <div className="profile-rooms">
+                {ownedRooms.map((r) => (
+                  <div key={r._id} className="profile-room-item">
+                    <div
+                      className="profile-room-name"
+                      onClick={() => navigate(`/live/${r.uid}`)}
+                    >
+                      {r.name}
+                    </div>
+                    {isOwnProfile && (
+                      <span
+                        className="profile-room-delete"
+                        onClick={() => handleDeleteRoom(r._id, r.name)}
+                      >
+                        delete
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

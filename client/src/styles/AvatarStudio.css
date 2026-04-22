@@ -186,6 +186,17 @@
   background: var(--greenbg);
   color: var(--green);
 }
+.as-avatar-default-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  background: var(--bg2);
+  color: var(--muted);
+}
 .as-avatar-name {
   font-family: "DM Mono", monospace;
   font-size: 13px;

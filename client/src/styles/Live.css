@@ -327,6 +327,32 @@
   --pixel-shadow: rgba(45, 138, 62, 0.2);
 }
 
+/* Leave room button: 红框红图标、白底 */
+.live-member-leave-btn {
+  margin: 10px 0 14px;
+  min-height: 52px;
+  width: 52px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--red);
+  background: #ffffff;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  --pixel-border-color: var(--red);
+  --pixel-base: #ffffff;
+  --pixel-highlight: #ffeceb;
+  --pixel-shadow: rgba(200, 60, 60, 0.2);
+  transition: background 0.15s;
+}
+
+.live-member-leave-btn:hover {
+  background: #fff5f5;
+  --pixel-base: #fff5f5;
+}
+
 /* ── right panel ── */
 .live-panel {
   width: 280px;
@@ -787,57 +813,93 @@
   opacity: 0.5;
 }
 
+/* ── task section：最小高度支撑 panel 顶部 ── */
+.live-task-section {
+  flex-shrink: 0; /* 任务内容扩展时不被历史侵占，挽古历史 */
+  min-height: 220px;
+}
+
+/* ── history section：flex 擑满剩余空间，使 history list 能到达 panel 底 ── */
+.live-history-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* flex child 默认不收缩，设为 0 才能让内部滚动正常 */
+}
+
 /* ── history list ── */
+.live-history-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* 隐藏 scrollbar 但保留滚动能力 */
+  scrollbar-width: none; /* Firefox */
+}
+.live-history-list::-webkit-scrollbar {
+  display: none; /* Webkit */
+}
+
 .live-history-item {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  gap: 11px;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--bg2);
-}
-
-.live-history-item:last-child {
-  border-bottom: none;
-}
-
-.live-history-av {
-  width: 22px;
-  height: 22px;
-  font-family: "DM Mono", monospace;
-  font-size: 9px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg2);
-  color: var(--muted);
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.live-history-av.av-g {
-  background: var(--greenbg);
-  color: var(--green);
+  gap: 2px;
+  padding: 8px 0;
 }
 
 .live-history-text {
-  font-size: 13px;
-  color: var(--ink2);
-  line-height: 1.5;
-  flex: 1;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.55;
+  letter-spacing: 0.01em;
 }
 
 .live-history-text strong {
-  font-weight: 600;
-  color: var(--ink);
+  font-weight: 500;
+  color: var(--ink2);
 }
 
 .live-history-time {
   font-family: "DM Mono", monospace;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-top: 3px;
+  opacity: 0.7;
   letter-spacing: 0.03em;
+}
+
+/* history join_request actions (admin only) */
+.live-history-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.live-history-approve,
+.live-history-reject {
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  background: transparent;
+  border: 1.5px solid var(--bg3);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.live-history-approve {
+  color: var(--green);
+  border-color: var(--green);
+}
+.live-history-approve:hover {
+  background: var(--greenbg);
+}
+
+.live-history-reject {
+  color: var(--muted);
+}
+.live-history-reject:hover {
+  color: var(--red);
+  border-color: var(--red);
 }

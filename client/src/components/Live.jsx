@@ -1,357 +1,841 @@
-import { useState, useEffect, useRef } from 'react';
-import PixelRobot from './PixelRobot';
-import PixelBox from './PixelBox';
-import { startAnimation, defaultCuts, DEFAULT_ANIM_CONFIG } from '../utils/pixelChar';
-import './Live.css';
-
-const GUEST_UIDS = ['59718320605', '65377146175', '14045173949'];
-
-const ROBOT_COLORS = [
-  { head: '#143050', body: '#205080', leg: '#102440' },
-  { head: '#521815', body: '#8e3530', leg: '#3e100e' },
-  { head: '#888878', body: '#aaa898', leg: '#666656' },
-];
-
-const SELF_ROBOT = { head: '#265c2e', body: '#37753f', leg: '#1e4824' };
-
-// ── 用户像素角色：有 avatar 时跑透明背景动画，否则退回 PixelRobot ──
-function PlayerAvatar({ avatarGrid, avatarCuts, robotColors, isSelf, size = 80 }) {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    if (!canvasRef.current || !avatarGrid || !avatarCuts) return;
-    const cuts = avatarCuts.length === 3 ? avatarCuts : defaultCuts(avatarGrid.length);
-    const cfg = { ...DEFAULT_ANIM_CONFIG, cuts };
-    // transparent=true：不画棋盘格，canvas 背景保持透明
-    const stop = startAnimation(canvasRef.current, avatarGrid, cfg, size, true);
-    return stop;
-  }, [avatarGrid, avatarCuts, size]);
-
-  if (!avatarGrid) {
-    const colors = robotColors ?? (isSelf ? SELF_ROBOT : ROBOT_COLORS[0]);
-    return <PixelRobot {...colors} width={size} height={Math.round(size * 1.25)} />;
-  }
-
-  return <canvas ref={canvasRef} style={{ imageRendering: 'pixelated', display: 'block' }} />;
-}
-
-function Avatar({ src, displayName, className = '' }) {
-  const initials = displayName?.slice(0, 2).toUpperCase() ?? '?';
-  if (src) return <img src={src} alt={displayName} className={`live-av live-av-img ${className}`} />;
-  return <div className={`live-av ${className}`}>{initials}</div>;
-}
-
-function pctClass(pct) {
-  if (pct === 100) return 'done';
-  if (pct < 30) return 'urgent';
-  if (pct < 60) return 'warn';
-  return '';
-}
-
-function HistoryList({ items }) {
-  return (
-    <div>
-      {items.map(h => (
-        <div key={h.id} className="live-history-item">
-          <div className={`live-history-av ${h.avClass}`}>{h.initials}</div>
-          <div className="live-history-text"><strong>{h.who}</strong> {h.text}</div>
-          <div className="live-history-time">{h.time}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AddTaskModal({ onClose, onPick, selectedIds, tasks }) {
-  const formatDue = (d) => {
-    if (!d) return 'no due date';
-    const due = new Date(d);
-    const now = new Date();
-    const diff = due - now;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    if (diff < 0) return 'overdue';
-    if (hours < 24) return `due in ${hours}h`;
-    if (days === 1) return 'due tomorrow';
-    if (days <= 7) return `due in ${days}d`;
-    return `due ${due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-  };
-  const available = tasks.filter(t => {
-    const done = t.progressNumerator >= t.progressDenominator && t.progressDenominator > 0;
-    return !done && !selectedIds.includes(t._id);
-  });
-  return (
-    <div className="live-modal-backdrop" onClick={onClose}>
-      <PixelBox variant="retro" className="live-modal" onClick={e => e.stopPropagation()}>
-        <div className="live-modal-header">
-          <div className="live-modal-title">Add Task</div>
-          <button type="button" className="live-modal-close" onClick={onClose}>
-            <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/217233/scrapCross.png" alt="" width="15" height="15" />
-          </button>
-        </div>
-        <div className="live-modal-body">
-          {available.length === 0 ? <div className="live-modal-empty">No available tasks.</div>
-            : available.map(t => {
-              const num = t.progressNumerator ?? 0, den = t.progressDenominator ?? 0;
-              const course = t.course?.courseCode;
-              return (
-                <button key={t._id} type="button" className="live-modal-task" onClick={() => onPick(t)}>
-                  <div className="live-modal-task-top">
-                    <span className="live-modal-task-name">{t.title}</span>
-                    {den > 0 && <span className="live-modal-task-frac">{num}/{den}</span>}
-                  </div>
-                  <div className="live-modal-task-meta">
-                    <span>{formatDue(t.dueDate)}</span>
-                    {course && <><span className="live-modal-task-dot">·</span><span>{course}</span></>}
-                  </div>
-                </button>
-              );
-            })}
-        </div>
-      </PixelBox>
-    </div>
-  );
-}
-
-function SelfPanel({ tasks, roomTasks, onAddTask, onRemoveTask }) {
-  const [showModal, setShowModal] = useState(false);
-  const [menuFor, setMenuFor] = useState(null);
-  useEffect(() => {
-    if (!menuFor) return;
-    const onDocClick = () => setMenuFor(null);
-    const t = setTimeout(() => document.addEventListener('click', onDocClick), 0);
-    return () => { clearTimeout(t); document.removeEventListener('click', onDocClick); };
-  }, [menuFor]);
-  return (
-    <>
-      <div>
-        <div className="live-task-section-title">My Tasks</div>
-        {roomTasks.length === 0 && <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>No tasks added to this room yet.</div>}
-        {roomTasks.map(t => {
-          const pct = t.progressDenominator ? Math.round(t.progressNumerator / t.progressDenominator * 100) : 0;
-          return (
-            <div key={t._id} className="live-task-row">
-              <div className="live-task-label">
-                <span className="live-task-name">{t.title}</span>
-                <span className="live-task-pct-wrap">
-                  <span className="live-task-pct">{pct}%</span>
-                  <button type="button" className="live-task-menu-btn" onClick={e => { e.stopPropagation(); setMenuFor(prev => prev === t._id ? null : t._id); }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="3" cy="7" r="1.3" /><circle cx="7" cy="7" r="1.3" /><circle cx="11" cy="7" r="1.3" /></svg>
-                  </button>
-                  {menuFor === t._id && (
-                    <PixelBox variant="retro" className="live-task-menu" onClick={e => e.stopPropagation()}>
-                      <button type="button" className="live-task-menu-item" onClick={() => { onRemoveTask(t._id); setMenuFor(null); }}>Remove from room</button>
-                    </PixelBox>
-                  )}
-                </span>
-              </div>
-              <input className="live-task-slider" type="range" min="0" max="100" value={pct} readOnly />
-            </div>
-          );
-        })}
-        <button className="live-add-task-btn" onClick={() => setShowModal(true)}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><line x1="6" y1="1" x2="6" y2="11" /><line x1="1" y1="6" x2="11" y2="6" /></svg>
-          add task
-        </button>
-      </div>
-      <div><div className="live-task-section-title">History</div><HistoryList items={[]} /></div>
-      {showModal && <AddTaskModal onClose={() => setShowModal(false)} onPick={task => { onAddTask(task); setShowModal(false); }} selectedIds={roomTasks.map(t => t._id)} tasks={tasks} />}
-    </>
-  );
-}
-
-function MemberPanel({ member }) {
-  return (
-    <>
-      <div>
-        <div className="live-task-section-title">Tasks</div>
-        {member.tasks.length === 0 && <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 12, color: 'var(--muted)' }}>No tasks added to this room yet.</div>}
-        {member.tasks.map(t => {
-          const pct = t.progressDenominator ? Math.round(t.progressNumerator / t.progressDenominator * 100) : 0;
-          const pc = pctClass(pct);
-          return (
-            <div key={t._id} className="live-task-row">
-              <div className="live-task-label"><span className="live-task-name">{t.title}</span><span className={`live-task-pct ${pc}`}>{pct}%</span></div>
-              <div className="live-task-bar"><div className={`live-task-bar-fill ${pc}`} style={{ width: `${pct}%` }} /></div>
-            </div>
-          );
-        })}
-      </div>
-      <div><div className="live-task-section-title">History</div><HistoryList items={[]} /></div>
-    </>
-  );
-}
-
-function OverallPanel({ allMembers }) {
-  return (
-    <div>
-      <div className="live-task-section-title">Overall Progress</div>
-      {allMembers.map(m => {
-        const tasks = m.tasks ?? [];
-        const avg = tasks.length ? Math.round(tasks.reduce((s, t) => s + (t.progressDenominator ? t.progressNumerator / t.progressDenominator * 100 : 0), 0) / tasks.length) : 0;
-        const pc = pctClass(avg);
-        return (
-          <div key={m.uid || m._id} className="live-task-row">
-            <div className="live-task-label"><span className="live-task-name">{m.displayName}</span><span className={`live-task-pct ${pc}`}>{avg}%</span></div>
-            <div className="live-task-bar"><div className={`live-task-bar-fill ${pc}`} style={{ width: `${avg}%` }} /></div>
-          </div>
-        );
-      })}
-      <div style={{ marginTop: 20 }}><div className="live-task-section-title">All Activity</div><HistoryList items={[]} /></div>
-    </div>
-  );
-}
-
-function getDominantColor(imgEl) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 50; canvas.height = 50;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(imgEl, 0, 0, 50, 50);
-  const data = ctx.getImageData(0, 0, 50, 50).data;
-  const counts = {};
-  for (let i = 0; i < data.length; i += 4) {
-    const key = `${Math.round(data[i]/32)*32},${Math.round(data[i+1]/32)*32},${Math.round(data[i+2]/32)*32}`;
-    counts[key] = (counts[key] || 0) + 1;
-  }
-  const [r, g, b] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0].split(',');
-  return `rgb(${r},${g},${b})`;
-}
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import PixelBox from "./PixelBox";
+import RoomScene from "./live/RoomScene";
+import {
+  Avatar,
+  SelfPanel,
+  MemberPanel,
+  OverallPanel,
+} from "./live/Panels";
+import {
+  CANVAS_REF_H,
+  CHAR_REF_H,
+  WORLD_SCALE,
+  SIDE_MIN_FROM_CENTER,
+  BG_SRC,
+  BG_HEIGHT_PCT,
+  BG_OFFSET_X_REF,
+  BG_OFFSET_Y_REF,
+} from "./live/roomConfig";
+import {
+  getDominantColor,
+  generateSeats,
+  extendSeats,
+  sideCenterX,
+} from "./live/liveUtils";
+import { useRoomSocket } from "../hooks/useSocket";
+import "../styles/Live.css";
 
 const API = import.meta.env.VITE_API_URL;
 
+// room.background 存文件名；前端拼到 /room/backgrounds/ 下
+const bgUrlFromRoom = (room) =>
+  room?.background?.key
+    ? `/room/backgrounds/${room.background.key}`
+    : BG_SRC;
+
 export default function Live() {
-  const [selected, setSelected] = useState('self');
+  const { uid: roomUid } = useParams();
+  const navigate = useNavigate();
+
+  // ── 选中状态 ──
+  const [selected, setSelected] = useState("self");
+
+  // ── Auth 当前用户 ──
   const [self, setSelf] = useState(null);
   const [selfProfile, setSelfProfile] = useState(null);
   const [selfTasks, setSelfTasks] = useState([]);
-  const [roomTasks, setRoomTasks] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [badgeColor, setBadgeColor] = useState('var(--green)');
-  const [badgeShadow, setBadgeShadow] = useState('rgba(45,138,62,0.2)');
-  const badgeImgRef = useRef(null);
 
-  const badgeSrc = (selected === 'overall' || selected === 'self')
-    ? (self?.avatar ?? null)
-    : members.find(m => m.uid === selected)?.avatar ?? null;
+  // ── Room 数据 ──
+  const [room, setRoom] = useState(null);
+  const [roomError, setRoomError] = useState(null);
+  const [events, setEvents] = useState([]);
+
+  // ── Presence & session ──
+  const [onlineUserIds, setOnlineUserIds] = useState([]); // user _id 字串数组
+  const [sessionStartAt, setSessionStartAt] = useState(null); // ISO 时间或 null
+  const [now, setNow] = useState(Date.now()); // 每秒刷新让 session timer 走动
+
+  // ── Badge 颜色 ──
+  const [badgeColor, setBadgeColor] = useState("var(--green)");
+  const [badgeShadow, setBadgeShadow] = useState("rgba(45,138,62,0.2)");
+
+  // ── 场景数据 ──
+  const [furnitures, setFurnitures] = useState([]);
+  const [seats, setSeats] = useState(null);
+  const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
+  const sceneRef = useRef(null);
+
+  // ── Camera ──
+  const [cameraX, setCameraX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragRef = useRef({
+    active: false,
+    startX: 0,
+    startCameraX: 0,
+    moved: false,
+  });
+
+  // ── Fetch：全局数据 ──
+  useEffect(() => {
+    fetch(`${API}/api/auth/me`, { credentials: "include" })
+      .then((r) => r.json())
+      .then(setSelf);
+    fetch(`${API}/api/profile`, { credentials: "include" })
+      .then((r) => r.json())
+      .then(setSelfProfile);
+    fetch(`${API}/api/tasks`, { credentials: "include" })
+      .then((r) => r.json())
+      .then(setSelfTasks);
+    fetch(`${API}/api/furnitures`, { credentials: "include" })
+      .then((r) => r.json())
+      .then(setFurnitures)
+      .catch(() => setFurnitures([]));
+  }, []);
+
+  // ── Fetch：room 数据 ──
+  // 抽成独立函数，socket 收到事件或 approve/reject 后都调一次
+  const refetchRoom = useCallback(async () => {
+    const r = await fetch(`${API}/api/rooms/${roomUid}`, {
+      credentials: "include",
+    });
+    if (!r.ok) {
+      const data = await r.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${r.status}`);
+    }
+    return r.json();
+  }, [roomUid]);
+
+  const refetchEvents = useCallback(async () => {
+    const r = await fetch(`${API}/api/rooms/${roomUid}/events?limit=50`, {
+      credentials: "include",
+    });
+    if (r.ok) setEvents(await r.json());
+  }, [roomUid]);
 
   useEffect(() => {
-    if (!badgeSrc) { setBadgeColor('var(--green)'); setBadgeShadow('rgba(45,138,62,0.2)'); return; }
+    setRoom(null);
+    setRoomError(null);
+    setEvents([]);
+    refetchRoom().then((r) => {
+      setRoom(r);
+      setSessionStartAt(r.sessionStartAt);
+    }).catch((e) => setRoomError(e.message));
+    refetchEvents().catch(() => {});
+  }, [roomUid, refetchRoom, refetchEvents]);
+
+  // Session timer：每秒 tick 更新显示。sessionStartAt 为 null 时显示“0 studying”状态
+  useEffect(() => {
+    if (!sessionStartAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [sessionStartAt]);
+
+  // ── 派生：admin 判断 ──
+  const isAdmin = useMemo(() => {
+    if (!room || !self) return false;
+    const myId = String(self._id);
+    if (String(room.owner?._id ?? room.owner) === myId) return true;
+    return room.admins?.some((a) => String(a._id ?? a) === myId);
+  }, [room, self]);
+
+  // ── Socket：订阅房间事件 ──
+  // 收到事件后：
+  //   1. 将事件插到 events 列表开头，history UI 立刻更新
+  //   2. 如果事件会改变 room 成员/任务状态，重新 fetch room
+  const handleRoomEvent = useCallback(
+    (event) => {
+      // admin-only 事件对非 admin 过滤（后端 broadcast 没滤，前端自己滤）
+      const adminOnly = [
+        "join_request",
+        "join_approved",
+        "join_rejected",
+      ].includes(event.type);
+      if (adminOnly && !isAdmin) return;
+
+      setEvents((prev) => [event, ...prev]);
+
+      // 引起 members 列表/任务变化的事件，重新 fetch room
+      const needsRefetch = [
+        "member_joined",
+        "leave",
+        "task_add",
+        "task_remove",
+        "task_complete",
+        "task_progress",
+        "join_request", // pendingMembers 列表变了
+      ].includes(event.type);
+      if (needsRefetch) refetchRoom().then(setRoom).catch(() => {});
+    },
+    [isAdmin, refetchRoom],
+  );
+  const handlePresence = useCallback(({ online }) => {
+    setOnlineUserIds(online ?? []);
+  }, []);
+  const handleSessionStart = useCallback(({ sessionStartAt }) => {
+    setSessionStartAt(sessionStartAt);
+  }, []);
+  const handleSessionEnd = useCallback(() => {
+    setSessionStartAt(null);
+  }, []);
+  useRoomSocket(
+    roomUid,
+    handleRoomEvent,
+    handlePresence,
+    handleSessionStart,
+    handleSessionEnd,
+  );
+
+  // ── Admin approve/reject ──
+  const onApprove = async (userId) => {
+    const r = await fetch(`${API}/api/rooms/${room._id}/approve/${userId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (r.ok) {
+      // socket 广播会自动刷新 events + room，但手动 refetch 一次减少延迟感
+      const fresh = await refetchRoom();
+      setRoom(fresh);
+      await refetchEvents();
+    }
+  };
+  const onReject = async (userId) => {
+    const r = await fetch(`${API}/api/rooms/${room._id}/reject/${userId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+    if (r.ok) {
+      await refetchEvents();
+    }
+  };
+
+  // ── 派生：members + roomTasks ──
+  // members = 场景中除 self 外的所有人（要渲染成角色）
+  // roomTasks = 自己在房间里的任务
+  // room.members 里自己也在内，"members" 变量单指别人
+  // 精简 room（非 member 的 gate 态）没有 members 字段，提前返回
+  const { members, roomTasks } = useMemo(() => {
+    if (!room || !self || !Array.isArray(room.members))
+      return { members: [], roomTasks: [] };
+    let myTasks = [];
+    const others = [];
+    room.members.forEach((m) => {
+      const userId = m.user?._id ?? m.user;
+      const isMe = String(userId) === String(self._id);
+      if (isMe) {
+        myTasks = m.tasks ?? [];
+        return;
+      }
+      if (m.profile) {
+        others.push({
+          ...m.profile,
+          // 显式保留 User._id（presence 等地方要用）。注意 profile._id 不是 User._id
+          userId: String(userId),
+          tasks: m.tasks ?? [],
+        });
+      }
+    });
+    return { members: others, roomTasks: myTasks };
+  }, [room, self]);
+
+  // ── 背景设置 ──
+  const bg = useMemo(() => {
+    if (room?.background) {
+      return {
+        src: bgUrlFromRoom(room),
+        heightPct: room.background.heightPct ?? BG_HEIGHT_PCT,
+        offsetX: room.background.offsetX ?? BG_OFFSET_X_REF,
+        offsetY: room.background.offsetY ?? BG_OFFSET_Y_REF,
+      };
+    }
+    return {
+      src: BG_SRC,
+      heightPct: BG_HEIGHT_PCT,
+      offsetX: BG_OFFSET_X_REF,
+      offsetY: BG_OFFSET_Y_REF,
+    };
+  }, [room]);
+
+  // ── Bg 真实尺寸，用于 camera clamp ──
+  const [bgNaturalSize, setBgNaturalSize] = useState({ w: 1568, h: 896 });
+  useEffect(() => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.onload = () =>
+      setBgNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    img.src = bg.src;
+  }, [bg.src]);
+
+  // ── Camera bounds ──
+  const cameraBounds = (() => {
+    if (!canvasSize.w || !canvasSize.h) return { min: 0, max: 0 };
+    const k = canvasSize.h / CANVAS_REF_H;
+    const bgAspect = bgNaturalSize.w / bgNaturalSize.h;
+    const bgRenderW = canvasSize.h * (bg.heightPct / 100) * bgAspect;
+    const bgOffX = bg.offsetX * k;
+    const worldBound = (canvasSize.w * (WORLD_SCALE - 1)) / 2;
+    const bgBoundHalf = (bgRenderW - canvasSize.w) / 2;
+    const upper = Math.min(worldBound, bgBoundHalf - bgOffX);
+    const lower = Math.max(-worldBound, -bgBoundHalf - bgOffX);
+    if (upper < lower) return { min: -bgOffX, max: -bgOffX };
+    return { min: lower, max: upper };
+  })();
+  const clampCamera = (v) =>
+    Math.max(cameraBounds.min, Math.min(cameraBounds.max, v));
+
+  useEffect(() => {
+    setCameraX((v) =>
+      Math.max(cameraBounds.min, Math.min(cameraBounds.max, v)),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameraBounds.min, cameraBounds.max]);
+
+  // ── Badge 颜色 ──
+  const badgeSrc =
+    selected === "overall" || selected === "self"
+      ? (self?.avatar ?? null)
+      : (members.find((m) => m.uid === selected)?.avatar ?? null);
+
+  useEffect(() => {
+    if (!badgeSrc) {
+      setBadgeColor("var(--green)");
+      setBadgeShadow("rgba(45,138,62,0.2)");
+      return;
+    }
+    const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       try {
         const color = getDominantColor(img);
         setBadgeColor(color);
-        const match = color.match(/\d+/g);
-        if (match) setBadgeShadow(`rgba(${match[0]},${match[1]},${match[2]},0.35)`);
-      } catch(e) {}
+        const m = color.match(/\d+/g);
+        if (m) setBadgeShadow(`rgba(${m[0]},${m[1]},${m[2]},0.35)`);
+      } catch (e) {}
     };
     img.src = badgeSrc;
   }, [badgeSrc]);
 
-  useEffect(() => {
-    fetch(`${API}/api/auth/me`, { credentials: 'include' }).then(r => r.json()).then(setSelf);
-    fetch(`${API}/api/profile`, { credentials: 'include' }).then(r => r.json()).then(setSelfProfile);
-    fetch(`${API}/api/tasks`, { credentials: 'include' }).then(r => r.json()).then(setSelfTasks);
-    Promise.all(GUEST_UIDS.map(uid =>
-      fetch(`${API}/api/profile/${uid}`, { credentials: 'include' }).then(r => r.json())
-    )).then(profiles => setMembers(profiles.map((p, i) => ({ ...p, robot: ROBOT_COLORS[i], tasks: [] }))));
-  }, []);
+  // ── Canvas 尺寸 ──
+  // dep 包含 self 和 room——两者到齐 JSX 才渲染、sceneRef 才挂载
+  useLayoutEffect(() => {
+    if (!sceneRef.current) return;
+    const target = sceneRef.current.parentElement;
+    if (!target) return;
+    const { width, height } = target.getBoundingClientRect();
+    if (height > 0)
+      setCanvasSize({ w: Math.round(width), h: Math.round(height) });
+  }, [self, room]);
 
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    const target = sceneRef.current.parentElement;
+    if (!target) return;
+    const obs = new ResizeObserver((entries) => {
+      const { width, height } = entries[0].contentRect;
+      setCanvasSize({ w: Math.round(width), h: Math.round(height) });
+    });
+    obs.observe(target);
+    return () => obs.disconnect();
+  }, [self, room]);
+
+  // ── 座位分配 ──
+  // 首次调 generateSeats；后续 members 增加时调 extendSeats 增量补座
+  // （直接重调 generateSeats 会打乱现有人的坐位）
+  useEffect(() => {
+    if (!furnitures.length || !self || !room) return;
+    const allowedKeys =
+      room.furnitures?.length > 0 ? new Set(room.furnitures) : null;
+    const pool = allowedKeys
+      ? furnitures.filter((f) => allowedKeys.has(f.key))
+      : furnitures;
+    const count = 1 + members.length;
+    if (!seats) {
+      const s = generateSeats(count, pool);
+      if (s.length > 0) setSeats(s);
+    } else if (count > seats.length) {
+      // 有新成员：增量补座
+      setSeats(extendSeats(seats, count, pool));
+    } else if (count < seats.length) {
+      // 有人离开：重新从头算（这种情况下场景风格不一致没问题）
+      // 不硬要求保持原有人坐原位：room 人心散了重新洗牌也可以
+      setSeats(generateSeats(count, pool));
+    }
+  }, [furnitures, self, room, members.length, seats]);
+
+  // ── 选中变化时聚焦 camera ──
+  useEffect(() => {
+    if (!canvasSize.w || !seats) return;
+    const k = canvasSize.h / CANVAS_REF_H;
+    const sideMin = SIDE_MIN_FROM_CENTER * k;
+
+    let targetIdx = null;
+    if (selected === "self") targetIdx = 0;
+    else if (selected === "overall") targetIdx = null;
+    else {
+      const found = members.findIndex((m) => m.uid === selected);
+      if (found >= 0) targetIdx = found + 1;
+    }
+
+    let targetCanvasX = canvasSize.w / 2;
+    if (targetIdx != null) {
+      const seat = seats.find((s) => s.memberIdx === targetIdx);
+      if (seat) {
+        if (seat.position === "center") {
+          const halfGap = (seat.furniture.layout?.charHalfGap ?? 90) * k;
+          targetCanvasX =
+            canvasSize.w / 2 + (seat.slotIndex === 0 ? -halfGap : halfGap);
+        } else {
+          const sideInset = (seat.furniture.layout?.sideInset ?? 260) * k;
+          targetCanvasX = sideCenterX(
+            seat.position,
+            sideInset,
+            canvasSize.w,
+            sideMin,
+          );
+        }
+      }
+    }
+    setCameraX(clampCamera(canvasSize.w / 2 - targetCanvasX));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, canvasSize.w, canvasSize.h, seats, members]);
+
+  // ── 拖动手势 ──
+  const onScenePointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    dragRef.current = {
+      active: true,
+      startX: e.clientX,
+      startCameraX: cameraX,
+      moved: false,
+    };
+    setIsDragging(true);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (_) {}
+  };
+  const onScenePointerMove = (e) => {
+    const d = dragRef.current;
+    if (!d.active) return;
+    const dx = e.clientX - d.startX;
+    if (Math.abs(dx) > 3) d.moved = true;
+    setCameraX(clampCamera(d.startCameraX + dx));
+  };
+  const onScenePointerUp = (e) => {
+    dragRef.current.active = false;
+    setIsDragging(false);
+    try {
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+    } catch (_) {}
+  };
+
+  // ── 派生：场景 layout ──
+  // 把 isOnline 标记带到 member上，场景里渲染时会根据这个标记调透明度
+  const allMembersForScene = useMemo(() => {
+    if (!self) return [];
+    const onlineSet = new Set(onlineUserIds.map(String));
+    const selfOnline = onlineSet.has(String(self._id));
+    return [
+      {
+        ...self,
+        isSelf: true,
+        activeAvatar: selfProfile?.activeAvatar,
+        isOnline: selfOnline,
+      },
+      ...members.map((m) => ({
+        ...m,
+        isSelf: false,
+        // m.userId 是 User._id，m._id 是 Profile._id——用 userId 才能对上 presence
+        isOnline: onlineSet.has(String(m.userId)),
+      })),
+    ];
+  }, [self, selfProfile, members, onlineUserIds]);
+
+  const layout = useMemo(() => {
+    if (!seats) return [];
+    return seats
+      .map((s) => ({ ...s, member: allMembersForScene[s.memberIdx] }))
+      .filter((s) => s.member);
+  }, [seats, allMembersForScene]);
+
+  const charH =
+    canvasSize.h > 0
+      ? Math.round((CHAR_REF_H * canvasSize.h) / CANVAS_REF_H)
+      : CHAR_REF_H;
+
+  // ── 派生：Panel 用 ──
   const allMembers = self
-    ? [{ ...self, profile: selfProfile, robot: SELF_ROBOT, tasks: roomTasks }, ...members]
+    ? [
+        { ...self, profile: selfProfile, tasks: roomTasks },
+        ...members,
+      ]
     : members;
 
-  const panelMember = members.find(m => m.uid === selected);
-  const selfInitials = self?.displayName?.slice(0, 2).toUpperCase() ?? '...';
-  const badgeInitials = (selected === 'self' || selected === 'overall')
-    ? selfInitials
-    : panelMember?.displayName?.slice(0, 2).toUpperCase() ?? '??';
+  const panelMember = members.find((m) => m.uid === selected);
+  const selfInitials = self?.displayName?.slice(0, 2).toUpperCase() ?? "...";
+  const badgeInitials =
+    selected === "self" || selected === "overall"
+      ? selfInitials
+      : (panelMember?.displayName?.slice(0, 2).toUpperCase() ?? "??");
 
+  // ── Task add/remove ──
+  // 成功后 socket 会广播 task_add/task_remove，handleRoomEvent 会 refetchRoom。
+  // 这里再 refetch 一次避免自己错过自己的广播（理论上不会但稳定性优先）。
+  const onAddTask = async (task) => {
+    const r = await fetch(`${API}/api/rooms/${room._id}/member/tasks`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ taskId: task._id }),
+    });
+    if (r.ok) {
+      const fresh = await refetchRoom();
+      setRoom(fresh);
+    }
+  };
+  const onRemoveTask = async (taskId) => {
+    const r = await fetch(
+      `${API}/api/rooms/${room._id}/member/tasks/${taskId}`,
+      { method: "DELETE", credentials: "include" },
+    );
+    if (r.ok) {
+      const fresh = await refetchRoom();
+      setRoom(fresh);
+    }
+  };
+
+  // 更新 task 进度。slider 拖动时 log=false：静默 PATCH，不 refetch（避免 re-render 打断拖动）
+  // 拖动结束时 log=true：PATCH + refetch，同时后端记 history
+  // 后端检测到 100% 时无论如何 emit task_complete
+  const onUpdateTaskProgress = async (taskId, newNum, log = false) => {
+    const url = `${API}/api/tasks/${taskId}${log ? "?log=true" : ""}`;
+    const r = await fetch(url, {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ progressNumerator: newNum }),
+    });
+    if (r.ok && log) {
+      // 只在拖动结束时 refetch（task_complete 事件也会通过 socket 触发 refetch）
+      const fresh = await refetchRoom();
+      setRoom(fresh);
+    }
+  };
+
+  // Leave room：调后端 DELETE，后端自动处理 owner 转移 / 最后人 → inactive
+  const onLeave = async () => {
+    if (!window.confirm("Leave this room?")) return;
+    const r = await fetch(`${API}/api/rooms/${room._id}/leave`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (r.ok) {
+      navigate("/rooms");
+    } else {
+      const data = await r.json().catch(() => ({}));
+      alert(data.error || "Failed to leave room.");
+    }
+  };
+
+  // ── 错误/loading 态 ──
+  // 房间不存在 / 加载失败 / 不是成员：统一 redirect 到 /join/:uid
+  useEffect(() => {
+    if (roomError) navigate(`/join/${roomUid}`, { replace: true });
+  }, [roomError, roomUid, navigate]);
+
+  useEffect(() => {
+    if (room && room.isMember === false) {
+      navigate(`/join/${roomUid}`, { replace: true });
+    }
+  }, [room, roomUid, navigate]);
+
+  if (roomError) return null;
   if (!self) return null;
+  if (!room) return null;
+  if (room.isMember === false) return null;
+
+  const roomName = room.name ?? "Study Room";
+  const memberCount = room.members?.length ?? 1;
+  const onlineCount = onlineUserIds.length;
+
+  // Session 时长显示
+  const sessionText = (() => {
+    if (!sessionStartAt) return "no session";
+    const ms = now - new Date(sessionStartAt).getTime();
+    if (ms < 0) return "session 0m";
+    const totalMin = Math.floor(ms / 60000);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    if (h > 0) return `session ${h}h ${m}m`;
+    return `session ${m}m`;
+  })();
 
   return (
-    <div className={`live-page${selected === null ? ' panel-hidden' : ''}`}>
+    <div className={`live-page${selected === null ? " panel-hidden" : ""}`}>
       <div className="live-main">
         <PixelBox variant="retro" className="live-header">
-          <div className="live-room-name">AIT · final crunch room</div>
+          <div className="live-room-name">{roomName}</div>
           <div className="live-meta">
-            <span className="live-meta-badge"><div className="live-dot" />4 studying</span>
-            <span>session 2h 47m</span>
+            <span className="live-meta-badge">
+              <div className="live-dot" />
+              {onlineCount} studying
+            </span>
+            <span>{sessionText}</span>
           </div>
         </PixelBox>
 
         <div className="live-stage">
           <PixelBox variant="retro" className="live-canvas">
-            <div className="live-canvas-placeholder">
-              <div className="live-canvas-figures">
-                {allMembers.map((m, i) => {
-                  const avatar = i === 0 ? selfProfile?.activeAvatar : m.activeAvatar;
-                  const size = i === 0 ? 100 : 80;
-                  return (
-                    <div key={m.uid || 'self'} className="live-figure">
-                      <PlayerAvatar
-                        avatarGrid={avatar?.avatarGrid ?? null}
-                        avatarCuts={avatar?.avatarCuts ?? null}
-                        robotColors={m.robot}
-                        isSelf={i === 0}
-                        size={size}
-                      />
-                      <div className="live-canvas-label">{m.displayName}</div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div
+              ref={sceneRef}
+              onPointerDown={onScenePointerDown}
+              onPointerMove={onScenePointerMove}
+              onPointerUp={onScenePointerUp}
+              onPointerCancel={onScenePointerUp}
+              style={{
+                position: "relative",
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+                cursor: isDragging ? "grabbing" : "grab",
+                userSelect: "none",
+                touchAction: "pan-y",
+              }}
+            >
+              {seats && (
+                <RoomScene
+                  layout={layout}
+                  canvasW={canvasSize.w}
+                  canvasH={canvasSize.h}
+                  charH={charH}
+                  cameraX={cameraX}
+                  isDragging={isDragging}
+                  bg={bg}
+                />
+              )}
             </div>
           </PixelBox>
 
           <div className="live-members-row">
             <div className="live-members">
-              <PixelBox variant="retro" className={`live-member-card is-self${selected === 'self' ? ' active' : ''}`} onClick={() => setSelected(p => p === 'self' ? null : 'self')}>
-                <Avatar src={self.avatar} displayName={self.displayName} className="av-g" />
+              <PixelBox
+                variant="retro"
+                className={`live-member-card is-self${selected === "self" ? " active" : ""}`}
+                onClick={() =>
+                  setSelected((p) => (p === "self" ? null : "self"))
+                }
+              >
+                <Avatar
+                  src={self.avatar}
+                  displayName={self.displayName}
+                  className="av-g"
+                />
                 <span className="live-member-name">{self.displayName}</span>
                 <span className="live-member-pct">
-                  {roomTasks.length ? Math.round(roomTasks.reduce((s, t) => s + (t.progressDenominator ? t.progressNumerator / t.progressDenominator * 100 : 0), 0) / roomTasks.length) : 0}%
+                  {roomTasks.length
+                    ? Math.round(
+                        roomTasks.reduce(
+                          (s, t) =>
+                            s +
+                            (t.progressDenominator
+                              ? (t.progressNumerator / t.progressDenominator) *
+                                100
+                              : 0),
+                          0,
+                        ) / roomTasks.length,
+                      )
+                    : 0}
+                  %
                 </span>
               </PixelBox>
-              {members.map(m => (
-                <PixelBox key={m.uid} variant="retro" className={`live-member-card${selected === m.uid ? ' active' : ''}`} onClick={() => setSelected(p => p === m.uid ? null : m.uid)}>
-                  <Avatar src={m.avatar} displayName={m.displayName} />
-                  <span className="live-member-name">{m.displayName}</span>
-                  <span className="live-member-pct">—</span>
-                </PixelBox>
-              ))}
+              {members.map((m) => {
+                const avg = m.tasks?.length
+                  ? Math.round(
+                      m.tasks.reduce(
+                        (s, t) =>
+                          s +
+                          (t.progressDenominator
+                            ? (t.progressNumerator / t.progressDenominator) *
+                              100
+                            : 0),
+                        0,
+                      ) / m.tasks.length,
+                    )
+                  : null;
+                return (
+                  <PixelBox
+                    key={m.uid}
+                    variant="retro"
+                    className={`live-member-card${selected === m.uid ? " active" : ""}`}
+                    onClick={() =>
+                      setSelected((p) => (p === m.uid ? null : m.uid))
+                    }
+                  >
+                    <Avatar src={m.avatar} displayName={m.displayName} />
+                    <span className="live-member-name">{m.displayName}</span>
+                    <span className="live-member-pct">
+                      {avg == null ? "—" : `${avg}%`}
+                    </span>
+                  </PixelBox>
+                );
+              })}
             </div>
-            <PixelBox as="button" variant="retro" className={`live-member-overall-btn${selected === 'overall' ? ' active' : ''}`} onClick={() => setSelected(p => p === 'overall' ? null : 'overall')}>
+            <PixelBox
+              as="button"
+              variant="retro"
+              className={`live-member-overall-btn${selected === "overall" ? " active" : ""}`}
+              onClick={() =>
+                setSelected((p) => (p === "overall" ? null : "overall"))
+              }
+            >
               Overall
+            </PixelBox>
+            <PixelBox
+              as="button"
+              variant="retro"
+              className="live-member-leave-btn"
+              onClick={onLeave}
+              title="Leave room"
+            >
+              {/* 像素风 logout：左边三边门框、朝右箭头穿出。按 20×20 网格画 */}
+              <svg
+                width="16"
+                height="16"
+                viewBox="3 3 9 9"
+                fill="currentColor"
+                shapeRendering="crispEdges"
+                style={{ marginRight: -6 }}
+              >
+                <rect x="3" y="3" width="1" height="1" />
+                <rect x="4" y="3" width="1" height="1" />
+                <rect x="5" y="3" width="1" height="1" />
+                <rect x="6" y="3" width="1" height="1" />
+                <rect x="7" y="3" width="1" height="1" />
+                <rect x="8" y="3" width="1" height="1" />
+                <rect x="3" y="4" width="1" height="1" />
+                <rect x="4" y="4" width="1" height="1" />
+                <rect x="3" y="5" width="1" height="1" />
+                <rect x="9" y="5" width="1" height="1" />
+                <rect x="3" y="6" width="1" height="1" />
+                <rect x="9" y="6" width="1" height="1" />
+                <rect x="10" y="6" width="1" height="1" />
+                <rect x="3" y="7" width="1" height="1" />
+                <rect x="5" y="7" width="1" height="1" />
+                <rect x="6" y="7" width="1" height="1" />
+                <rect x="7" y="7" width="1" height="1" />
+                <rect x="8" y="7" width="1" height="1" />
+                <rect x="9" y="7" width="1" height="1" />
+                <rect x="10" y="7" width="1" height="1" />
+                <rect x="11" y="7" width="1" height="1" />
+                <rect x="3" y="8" width="1" height="1" />
+                <rect x="9" y="8" width="1" height="1" />
+                <rect x="10" y="8" width="1" height="1" />
+                <rect x="3" y="9" width="1" height="1" />
+                <rect x="9" y="9" width="1" height="1" />
+                <rect x="3" y="10" width="1" height="1" />
+                <rect x="4" y="10" width="1" height="1" />
+                <rect x="3" y="11" width="1" height="1" />
+                <rect x="4" y="11" width="1" height="1" />
+                <rect x="5" y="11" width="1" height="1" />
+                <rect x="6" y="11" width="1" height="1" />
+                <rect x="7" y="11" width="1" height="1" />
+                <rect x="8" y="11" width="1" height="1" />
+              </svg>
             </PixelBox>
           </div>
         </div>
       </div>
 
-      <PixelBox variant="retro" className={`live-panel${selected === null ? ' hidden' : ''}`}>
-        <PixelBox variant="retro" className="live-panel-badge" style={{ '--pixel-border-color': badgeColor, '--pixel-shadow': badgeShadow }}>
-          {badgeSrc ? <img ref={badgeImgRef} src={badgeSrc} alt="badge" className="live-panel-badge-img" crossOrigin="anonymous" /> : badgeInitials}
+      <PixelBox
+        variant="retro"
+        className={`live-panel${selected === null ? " hidden" : ""}`}
+      >
+        <PixelBox
+          variant="retro"
+          className="live-panel-badge"
+          style={{
+            "--pixel-border-color": badgeColor,
+            "--pixel-shadow": badgeShadow,
+          }}
+        >
+          {badgeSrc ? (
+            <img
+              src={badgeSrc}
+              alt="badge"
+              className="live-panel-badge-img"
+              crossOrigin="anonymous"
+            />
+          ) : (
+            badgeInitials
+          )}
         </PixelBox>
-        <button type="button" className="live-panel-close" onClick={() => setSelected(null)}>
-          <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/217233/scrapCross.png" alt="" width="15" height="15" />
+        <button
+          type="button"
+          className="live-panel-close"
+          onClick={() => setSelected(null)}
+        >
+          <img
+            src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/217233/scrapCross.png"
+            alt=""
+            width="15"
+            height="15"
+          />
         </button>
         {selected !== null && (
           <>
             <div className="live-panel-header">
               <div className="live-panel-who">
-                {selected === 'overall' ? <div className="live-panel-name">Overall</div>
-                  : selected === 'self' ? <div className="live-panel-name">{self.displayName}</div>
-                  : panelMember && <div className="live-panel-name">{panelMember.displayName}</div>}
+                {selected === "overall" ? (
+                  <div className="live-panel-name">Overall</div>
+                ) : selected === "self" ? (
+                  <div className="live-panel-name">{self.displayName}</div>
+                ) : (
+                  panelMember && (
+                    <div className="live-panel-name">
+                      {panelMember.displayName}
+                    </div>
+                  )
+                )}
               </div>
               <div className="live-panel-mode">
-                {selected === 'overall' ? 'all members' : selected === 'self' ? 'your progress' : 'viewing'}
+                {selected === "overall"
+                  ? "all members"
+                  : selected === "self"
+                    ? "your progress"
+                    : "viewing"}
               </div>
             </div>
             <div className="live-panel-body">
-              {selected === 'self'    && <SelfPanel tasks={selfTasks} roomTasks={roomTasks} onAddTask={task => setRoomTasks(prev => [...prev, task])} onRemoveTask={id => setRoomTasks(prev => prev.filter(t => t._id !== id))} />}
-              {selected === 'overall' && <OverallPanel allMembers={allMembers} />}
-              {panelMember            && <MemberPanel member={panelMember} />}
+              {selected === "self" && (
+                <SelfPanel
+                  tasks={selfTasks}
+                  roomTasks={roomTasks}
+                  onAddTask={onAddTask}
+                  onRemoveTask={onRemoveTask}
+                  onUpdateTaskProgress={onUpdateTaskProgress}
+                  events={events}
+                  isAdmin={isAdmin}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                />
+              )}
+              {selected === "overall" && (
+                <OverallPanel
+                  allMembers={allMembers}
+                  events={events}
+                  isAdmin={isAdmin}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                />
+              )}
+              {panelMember && (
+                <MemberPanel
+                  member={panelMember}
+                  events={events}
+                  isAdmin={isAdmin}
+                  onApprove={onApprove}
+                  onReject={onReject}
+                />
+              )}
             </div>
           </>
         )}

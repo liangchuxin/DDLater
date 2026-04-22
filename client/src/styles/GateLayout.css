@@ -1,0 +1,95 @@
+/* GateLayout: 透明 header + 底部铺满的 bg image,无 sidebar */
+
+.gate-layout {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* bg 图贴底:容器 100vw × 70vh,cover 保持比例,超出的从顶部裁掉 */
+/* mask: 从下到上渐变透明,底部实、顶部全透 */
+.gate-bg {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 70vh;
+  object-fit: cover;
+  object-position: bottom center;
+  z-index: -1;
+  pointer-events: none;
+  image-rendering: pixelated;
+  -webkit-mask-image: linear-gradient(to top, black 0%, transparent 100%);
+  mask-image: linear-gradient(to top, black 0%, transparent 100%);
+}
+
+/* 透明 header, 88px 高 */
+.gate-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 88px;
+  padding: 0 32px;
+  background: transparent;
+  position: relative;
+  z-index: 10;
+}
+
+.gate-brand {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.gate-brand img {
+  height: 32px;
+  display: block;
+}
+
+.gate-header-mid {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--ink, #1a1a1a);
+}
+
+.gate-date {
+  opacity: 0.75;
+}
+
+.gate-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green, #2d8a3e);
+  text-transform: uppercase;
+}
+
+.gate-online-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--greenl, #4caf62);
+  animation: gate-blink 2s infinite;
+}
+
+@keyframes gate-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* content 撑满剩余高度,让里面的 .create-room-page 能居中 */
+.gate-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}

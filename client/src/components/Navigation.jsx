@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useState, useEffect } from "react";
 import logoLight from "../assets/logo.svg";
+import { JoinRoomModal } from "./JoinRoom";
 
 const NAV_ITEMS = [
   {
@@ -66,8 +67,8 @@ const NAV_ITEMS = [
     ),
   },
   {
-    path: "/badges",
-    label: "Badges",
+    path: "/avatar",
+    label: "Avatar",
     icon: (
       <svg
         width="20"
@@ -75,11 +76,15 @@ const NAV_ITEMS = [
         viewBox="0 0 20 20"
         fill="none"
         stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
       >
-        <polygon points="10,2 12.4,7.3 18,8.1 13.9,12.1 15,17.8 10,15 5,17.8 6.1,12.1 2,8.1 7.6,7.3" />
+        <path d="M10 2C5.6 2 2 5.6 2 10c0 3.7 2.3 6.9 5.6 8.1.9.3 1.8-.3 1.9-1.3.2-2.2 2-3.8 4.2-3.8H14c2.2 0 4-1.8 4-4C18 5.6 14.4 2 10 2z" />
+        <circle cx="6" cy="8.5" r="1.1" fill="currentColor" stroke="none" />
+        <circle cx="8.5" cy="5.5" r="1.1" fill="currentColor" stroke="none" />
+        <circle cx="12" cy="5" r="1.1" fill="currentColor" stroke="none" />
+        <circle cx="15" cy="8" r="1.1" fill="currentColor" stroke="none" />
       </svg>
     ),
   },
@@ -90,6 +95,7 @@ export default function Navigation({ children }) {
   const location = useLocation();
   const { setCurrentUser } = useAuth();
   const [now, setNow] = useState(new Date());
+  const [joinOpen, setJoinOpen] = useState(false);
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60000);
     return () => clearInterval(timer);
@@ -130,6 +136,13 @@ export default function Navigation({ children }) {
           <span className="h-live">
             <div className="live-sq"></div>online
           </span>
+          <button
+            type="button"
+            className="h-join-btn"
+            onClick={() => setJoinOpen(true)}
+          >
+            Join Room
+          </button>
         </div>
       </header>
 
@@ -187,6 +200,7 @@ export default function Navigation({ children }) {
         </nav>
         {children}
       </div>
+      <JoinRoomModal open={joinOpen} onClose={() => setJoinOpen(false)} />
     </>
   );
 }

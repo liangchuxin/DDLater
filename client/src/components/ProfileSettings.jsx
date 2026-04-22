@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import defaultAvatar from "../assets/default-avatar.png";
 import SchoolSearch from "./SchoolSearch";
-import "../ProfileSettings.css";
+import "../styles/ProfileSettings.css";
 
 const GRADUATION_YEARS = Array.from({ length: 10 }, (_, i) => 2024 + i);
 
@@ -41,13 +41,16 @@ export default function ProfileSettings() {
   const handleAvatarChange = async () => {
     const url = window.prompt("Paste avatar URL:");
     if (!url) return;
-    setProfile({ ...profile, avatar: url });
-    await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/profile`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ avatar: url }),
     });
+    if (res.ok) {
+      const data = await res.json();
+      setProfile(data);
+    }
   };
 
   const handleSave = async () => {

@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import "./feed.css";
+import "./styles/feed.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 import Layout from "./components/Layout";
@@ -8,6 +8,9 @@ import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import Navigation from "./components/Navigation";
 import Live from "./components/Live";
+import CreateRoom from "./components/CreateRoom";
+import JoinCodePage from "./components/JoinRoom";
+import JoinConfirm from "./components/JoinConfirm";
 import MyTasks from "./components/MyTasks";
 import Rooms from "./components/Rooms";
 import Profile from "./components/Profile";
@@ -36,19 +39,159 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-              <Route path="/badges" element={<ProtectedRoute><Layout><Badges /></Layout></ProtectedRoute>} />
-              <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-              <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
-              <Route path="/tasks" element={<ProtectedRoute><Layout><MyTasks /></Layout></ProtectedRoute>} />
-              <Route path="/rooms" element={<ProtectedRoute><Layout><Rooms /></Layout></ProtectedRoute>} />
-              <Route path="/live" element={<ProtectedRoute><Layout><Live /></Layout></ProtectedRoute>} />
-              <Route path="/user/:uid" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-              <Route path="/user" element={<ProtectedRoute><Layout><Profile /></Layout></ProtectedRoute>} />
-              <Route path="/user/settings" element={<ProtectedRoute><Layout><ProfileSettings /></Layout></ProtectedRoute>} />
-              <Route path="/tasks/add" element={<ProtectedRoute><Layout><AddTask /></Layout></ProtectedRoute>} />
-              <Route path="/tasks/:id/edit" element={<ProtectedRoute><Layout><EditTask /></Layout></ProtectedRoute>} />
-              <Route path="/avatar" element={<ProtectedRoute><Layout><AvatarStudio /></Layout></ProtectedRoute>} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/badges"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Badges />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              {/* 未登录 / 跳转至产品界面 landing page */}
+              <Route
+                path="/login"
+                element={
+                  <GuestRoute>
+                    <Login />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <GuestRoute>
+                    <Register />
+                  </GuestRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <MyTasks />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/rooms"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Rooms />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/live/create"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <CreateRoom />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/join"
+                element={
+                  <ProtectedRoute>
+                    <JoinCodePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/join/:roomId"
+                element={
+                  <ProtectedRoute>
+                    <JoinConfirm />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/live/:uid"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Live />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/:uid"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Profile />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/user/settings"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ProfileSettings />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks/add"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AddTask />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <EditTask />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/avatar"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AvatarStudio />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </BrowserRouter>
         </AuthProvider>
