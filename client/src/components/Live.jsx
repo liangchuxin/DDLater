@@ -1,13 +1,15 @@
-import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import PixelBox from "./PixelBox";
 import RoomScene from "./live/RoomScene";
-import {
-  Avatar,
-  SelfPanel,
-  MemberPanel,
-  OverallPanel,
-} from "./live/Panels";
+import { Avatar, SelfPanel, MemberPanel, OverallPanel } from "./live/Panels";
 import {
   CANVAS_REF_H,
   CHAR_REF_H,
@@ -31,9 +33,7 @@ const API = import.meta.env.VITE_API_URL;
 
 // room.background 存文件名；前端拼到 /room/backgrounds/ 下
 const bgUrlFromRoom = (room) =>
-  room?.background?.key
-    ? `/room/backgrounds/${room.background.key}`
-    : BG_SRC;
+  room?.background?.key ? `/room/backgrounds/${room.background.key}` : BG_SRC;
 
 export default function Live() {
   const { uid: roomUid } = useParams();
@@ -118,10 +118,12 @@ export default function Live() {
     setRoom(null);
     setRoomError(null);
     setEvents([]);
-    refetchRoom().then((r) => {
-      setRoom(r);
-      setSessionStartAt(r.sessionStartAt);
-    }).catch((e) => setRoomError(e.message));
+    refetchRoom()
+      .then((r) => {
+        setRoom(r);
+        setSessionStartAt(r.sessionStartAt);
+      })
+      .catch((e) => setRoomError(e.message));
     refetchEvents().catch(() => {});
   }, [roomUid, refetchRoom, refetchEvents]);
 
@@ -166,7 +168,10 @@ export default function Live() {
         "task_progress",
         "join_request", // pendingMembers 列表变了
       ].includes(event.type);
-      if (needsRefetch) refetchRoom().then(setRoom).catch(() => {});
+      if (needsRefetch)
+        refetchRoom()
+          .then(setRoom)
+          .catch(() => {});
     },
     [isAdmin, refetchRoom],
   );
@@ -464,10 +469,7 @@ export default function Live() {
 
   // ── 派生：Panel 用 ──
   const allMembers = self
-    ? [
-        { ...self, profile: selfProfile, tasks: roomTasks },
-        ...members,
-      ]
+    ? [{ ...self, profile: selfProfile, tasks: roomTasks }, ...members]
     : members;
 
   const panelMember = members.find((m) => m.uid === selected);

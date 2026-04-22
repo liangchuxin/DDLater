@@ -40,7 +40,10 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
   const k = canvasH / CANVAS_REF_H;
   const z = Z_LAYERS[furniture.zSlot] ?? Z_LAYERS["char-back"];
 
-  // 离线角色半透明。undefined 默认作在线（避免首帧 presence 未到时全体闪烁）
+  // 离线时只让角色半透明,家具保持 opacity 1。
+  // 关键: opacity<1 会创建新的 stacking context,如果应用在外层 wrapper 上,
+  // 整个 SideSlot (带家具) 会被 z-index=1 的背景图覆盖。所以 offlineStyle
+  // 只能应用在包 avatar 的 div 上。undefined 默认作在线。
   const offlineStyle = member.isOnline === false ? { opacity: 0.35 } : {};
 
   const cx = sideCenterX(
@@ -76,8 +79,6 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
           bottom,
           width: ctrW,
           height: ctrH,
-          transition: "opacity 0.3s ease",
-          ...offlineStyle,
         }}
       >
         <img
@@ -102,6 +103,8 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
             transform: `rotate(${L.charRotation}deg)`,
             transformOrigin: "bottom center",
             zIndex: z.char,
+            transition: "opacity 0.3s ease",
+            ...offlineStyle,
           }}
         >
           {playerAvatar()}
@@ -129,8 +132,6 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
           bottom,
           width: ctrW,
           height: ctrH,
-          transition: "opacity 0.3s ease",
-          ...offlineStyle,
         }}
       >
         <img
@@ -157,6 +158,8 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
             transform: `rotate(${L.charRotation}deg)`,
             transformOrigin: "center center",
             zIndex: z.char,
+            transition: "opacity 0.3s ease",
+            ...offlineStyle,
           }}
         >
           {playerAvatar()}
@@ -199,8 +202,6 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
           bottom: sofaBottom,
           width: ctrW,
           height: ctrH,
-          transition: "opacity 0.3s ease",
-          ...offlineStyle,
         }}
       >
         <img
@@ -225,6 +226,8 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
             bottom: charBottomInContainer,
             transform: "translateX(-50%)",
             zIndex: z.char,
+            transition: "opacity 0.3s ease",
+            ...offlineStyle,
           }}
         >
           {playerAvatar(L.charClipRows)}
