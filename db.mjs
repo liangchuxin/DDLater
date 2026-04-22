@@ -68,13 +68,12 @@ const StudyRoomSchema = new mongoose.Schema({
   uid: { type: String, unique: true },
   name: String,
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  admins: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], // owner 默认在内，可继续添加
   members: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
   }],
   pendingMembers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  // 背景图设置：admin 可改。图文件放 client/public/room/backgrounds/ 下，key 存文件名。
+  // 背景图设置：只有 owner 能改。图文件放 client/public/room/backgrounds/ 下，key 存文件名。
   background: {
     key: { type: String, default: 'bg-ai-wide.png' },
     heightPct: { type: Number, default: 200 },

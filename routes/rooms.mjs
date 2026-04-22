@@ -31,9 +31,7 @@ async function findRoom(idOrUid) {
 }
 
 function isAdmin(room, userId) {
-  const uid = String(userId);
-  if (String(room.owner) === uid) return true;
-  return room.admins?.some((a) => String(a) === uid);
+  return String(room.owner) === String(userId);
 }
 
 // 记录一条事件。返回 populate 过 actor profile 的版本，方便调用方直接广播。
@@ -118,7 +116,7 @@ router.get('/', async (req, res) => {
   return res.json(result);
 });
 
-// POST /api/rooms - 创建房间（创建者自动成为 owner + admin + 第一个 member）
+// POST /api/rooms - 创建房间（创建者自动成为 owner + 第一个 member）
 router.post('/', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const { name, background, furnitures } = req.body;
@@ -128,7 +126,6 @@ router.post('/', async (req, res) => {
     uid,
     name,
     owner: req.session.userId,
-    admins: [req.session.userId],
     members: [{ user: req.session.userId, tasks: [] }],
     pendingMembers: [],
     ...(background ? { background } : {}),
@@ -137,15 +134,15 @@ router.post('/', async (req, res) => {
   return res.json(room);
 });
 
-// PATCH /api/rooms/:id - admin 修改房间
+// PATCH /api/rooms/:id - owner 修改房间
 router.patch('/:id', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
   if (!room) return res.status(404).json({ error: 'Room not found.' });
   if (!isAdmin(room, req.session.userId))
-    return res.status(403).json({ error: 'Not an admin.' });
+    return res.status(403).json({ error: 'Not the owner.' });
 
-  const { name, background, furnitures, admins } = req.body;
+  const { name, background, furnitures } = req.body;
   if (name != null) room.name = name;
   if (background != null) {
     if (background.key != null) room.background.key = background.key;
@@ -154,13 +151,6 @@ router.patch('/:id', async (req, res) => {
     if (background.offsetY != null) room.background.offsetY = background.offsetY;
   }
   if (furnitures != null) room.furnitures = furnitures;
-  if (admins != null) {
-    if (!room.owner.equals(req.session.userId))
-      return res.status(403).json({ error: 'Only the owner can change admins.' });
-    const set = new Set(admins.map(String));
-    set.add(String(room.owner));
-    room.admins = [...set];
-  }
   await room.save();
   return res.json(room);
 });
@@ -197,6 +187,8 @@ router.get('/:id', async (req, res) => {
       active: room.active,
       isMember: false,
       isPending: callerIsPending,
+      // 房间座位 max 4(desk 2 + side 2)。满了前端进 'full' 态,不给申请。
+      isFull: room.members.length >= 4,
     });
   }
 
@@ -260,6 +252,9 @@ router.post('/:id/join', async (req, res) => {
   const alreadyPending = room.pendingMembers.some((id) => id.equals(req.session.userId));
   if (alreadyMember) return res.status(400).json({ error: 'Already in this room.' });
   if (alreadyPending) return res.status(400).json({ error: 'Already requested.' });
+  // 房间座位 max 4;满了不收新申请(pending 不算,pending 被 approve 时也不会超)
+  if (room.members.length >= 4)
+    return res.status(400).json({ error: 'This room is full (max 4 members).' });
 
   room.pendingMembers.push(req.session.userId);
   await room.save();
@@ -394,8 +389,50 @@ router.delete('/:id/member/tasks/:taskId', async (req, res) => {
 
 // ── Leave / close ───────────────────────────────────────────────────────────
 
+// DELETE /api/rooms/:id/kick/:userId - owner 踢人
+// 被踢的人通过个人 channel 收到 'kicked-from-room' 自动离开
+// member_kicked 事件全员可见(不是 admin-only)——让剩下的成员看到"X removed Y"的 history
+router.delete('/:id/kick/:userId', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+  const room = await findRoom(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Room not found.' });
+  if (!isAdmin(room, req.session.userId))
+    return res.status(403).json({ error: 'Not the owner.' });
+
+  const targetId = req.params.userId;
+
+  if (String(targetId) === String(req.session.userId))
+    return res.status(400).json({ error: 'Cannot remove yourself. Use leave instead.' });
+
+  const wasMember = room.members.some((m) => m.user.equals(targetId));
+  if (!wasMember) return res.status(404).json({ error: 'User is not a member.' });
+
+  room.members = room.members.filter((m) => !m.user.equals(targetId));
+  await room.save();
+
+  // 取被踢的人的 displayName,payload 带上给 history 渲染用
+  // (不 populate 的话 history 只能显示 "removed a member" 而不是具体名字)
+  const targetProfile = await Profile.findOne({ user: targetId }, 'displayName');
+  const ev = await emitEvent(room, 'member_kicked', req.session.userId, {
+    targetUserId: String(targetId),
+    targetDisplayName: targetProfile?.displayName || '',
+  });
+  broadcast(req, room, ev);
+
+  // 个人 channel 通知被踢的人,他的 Live 页会 navigate 走
+  const io = req.app?.get('io');
+  if (io) {
+    io.to(`user:${targetId}`).emit('kicked-from-room', {
+      roomUid: room.uid,
+      roomName: room.name,
+    });
+  }
+
+  return res.json({ message: 'User removed.' });
+});
+
 // DELETE /api/rooms/:id/leave - 离开房间
-// 如果离开的是 owner，owner 转给 members 里非 owner 的第一个人。
+// 如果离开的是 owner，owner 转给 members 里剩下的第一个人。
 // 如果是最后一个 member，room 变为 inactive。
 router.delete('/:id/leave', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
@@ -407,16 +444,10 @@ router.delete('/:id/leave', async (req, res) => {
 
   const leavingIsOwner = room.owner.equals(req.session.userId);
   room.members = room.members.filter((m) => !m.user.equals(req.session.userId));
-  room.admins = room.admins.filter((a) => !a.equals(req.session.userId));
 
   // Owner 离开：转给 members 里第一个人
   if (leavingIsOwner && room.members.length > 0) {
-    const nextOwnerId = room.members[0].user;
-    room.owner = nextOwnerId;
-    // 新 owner 确保也在 admins 里
-    if (!room.admins.some((a) => a.equals(nextOwnerId))) {
-      room.admins.push(nextOwnerId);
-    }
+    room.owner = room.members[0].user;
   }
 
   // 最后一个 member 离开：room 变 inactive + 清 session

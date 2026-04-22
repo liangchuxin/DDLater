@@ -7,6 +7,7 @@ import {
   defaultCuts,
   DEFAULT_ANIM_CONFIG,
 } from "../utils/pixelChar";
+import { useConfirm } from "./ConfirmModal";
 import "../styles/AvatarStudio.css";
 
 const API = import.meta.env.VITE_API_URL;
@@ -46,6 +47,8 @@ export default function AvatarStudio() {
   const fileInputRef = useRef(null);
   const staticCanvasRef = useRef(null);
   const hiddenCanvasRef = useRef(null);
+
+  const { confirm, modal: confirmModal } = useConfirm();
 
   // 加载已有小人列表
   const loadAvatars = useCallback(async () => {
@@ -136,7 +139,13 @@ export default function AvatarStudio() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this character?")) return;
+    const ok = await confirm({
+      title: "Delete this character?",
+      message: "This pixel character will be removed from your collection.",
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`${API}/api/avatars/${id}`, {
       method: "DELETE",
       credentials: "include",
@@ -251,6 +260,7 @@ export default function AvatarStudio() {
 
         <canvas ref={hiddenCanvasRef} style={{ display: "none" }} />
       </div>
+      {confirmModal}
     </main>
   );
 }

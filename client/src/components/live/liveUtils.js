@@ -89,7 +89,9 @@ export function generateSeats(memberCount, furnitures) {
 export function extendSeats(existingSeats, memberCount, furnitures) {
   const taken = new Set(existingSeats.map((s) => s.memberIdx));
   const occupiedDeskSlots = new Set(
-    existingSeats.filter((s) => s.position === "center").map((s) => s.slotIndex),
+    existingSeats
+      .filter((s) => s.position === "center")
+      .map((s) => s.slotIndex),
   );
   const occupiedSides = new Set(
     existingSeats.filter((s) => s.position !== "center").map((s) => s.position),
@@ -127,7 +129,6 @@ export function extendSeats(existingSeats, memberCount, furnitures) {
       occupiedSides.add(freeSide);
       continue;
     }
-    // 3) 全满了：这个人暂时不渲染在场景里（在 member card 里还能看到）
   }
   return seats;
 }

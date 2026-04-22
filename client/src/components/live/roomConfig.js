@@ -26,7 +26,7 @@ export const BG_OFFSET_Y_REF = -360; // 正数向下
 
 // ── Z-index 映射 ──
 // 后端存 zSlot 语义，前端翻译成具体 z-index 数值。
-// 层级从低到高：bg → furniture-back → char → furniture-front → label
+// 层级从低到高：bg → furniture-back → char → furniture-front
 // char-back:   家具图在人后（bean_bag、sofa）
 // char-front:  家具图在人前（desk）
 // char-middle: 两层家具夹着人（bed: bottom 在后、top 在前）
@@ -35,5 +35,4 @@ export const Z_LAYERS = {
   "char-back": { furniture: 20, char: 25 },
   "char-front": { furniture: 30, char: 20 },
   "char-middle": { bottom: 20, char: 22, top: 24 },
-  label: 26,
 };

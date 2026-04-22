@@ -7,22 +7,22 @@ import MongoStore from "connect-mongo";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import "./db.mjs";
-import authRouter from './routes/auth.mjs';
-import profileRouter from './routes/profile.mjs';
-import tasksRouter from './routes/tasks.mjs';
-import roomsRouter from './routes/rooms.mjs';
-import avatarsRouter from './routes/avatars.mjs';
-import furnituresRouter from './routes/furnitures.mjs';
+import authRouter from "./routes/auth.mjs";
+import profileRouter from "./routes/profile.mjs";
+import tasksRouter from "./routes/tasks.mjs";
+import roomsRouter from "./routes/rooms.mjs";
+import avatarsRouter from "./routes/avatars.mjs";
+import furnituresRouter from "./routes/furnitures.mjs";
 
 mongoose.connect(process.env.DSN).then(() => console.log("mongodb connected"));
 
 const app = express();
 
-app.set('trust proxy', 1);
-console.log('NODE_ENV:', process.env.NODE_ENV);
+app.set("trust proxy", 1);
+console.log("NODE_ENV:", process.env.NODE_ENV);
 
 const allowedOrigins = process.env.CLIENT_URL
-  ? process.env.CLIENT_URL.split(',')
+  ? process.env.CLIENT_URL.split(",")
   : [];
 
 const corsOptions = {
@@ -30,7 +30,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
@@ -38,9 +38,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
 
-// 把 session middleware 抽成变量，HTTP 和 socket 共享同一份
+// session middleware as variable，shared by both HTTP and socket
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -48,34 +48,37 @@ const sessionMiddleware = session({
   store: MongoStore.create({ mongoUrl: process.env.DSN }),
   cookie: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     maxAge: 1000 * 60 * 60 * 24 * 7,
   },
 });
 app.use(sessionMiddleware);
 
-app.use('/api/auth', authRouter);
-app.use('/api/profile', profileRouter);
-app.use('/api/tasks', tasksRouter);
-app.use('/api/rooms', roomsRouter);
-app.use('/api/avatars', avatarsRouter);
-app.use('/api/furnitures', furnituresRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/profile", profileRouter);
+app.use("/api/tasks", tasksRouter);
+app.use("/api/rooms", roomsRouter);
+app.use("/api/avatars", avatarsRouter);
+app.use("/api/furnitures", furnituresRouter);
 
-app.get('/api/universities', async (req, res) => {
+app.get("/api/universities", async (req, res) => {
   const { name } = req.query;
-  const response = await fetch(`http://universities.hipolabs.com/search?name=${encodeURIComponent(name)}&country=United+States`);
+  const response = await fetch(
+    `http://universities.hipolabs.com/search?name=${encodeURIComponent(name)}&country=United+States`,
+  );
   const data = await response.json();
   return res.json(data);
 });
 
-app.get('/api/courses/search', async (req, res) => {
-  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+app.get("/api/courses/search", async (req, res) => {
+  if (!req.session.userId)
+    return res.status(401).json({ error: "Not logged in." });
   const { q, school } = req.query;
-  const Course = mongoose.model('Course');
+  const Course = mongoose.model("Course");
   const filter = {};
   if (school) filter.school = school;
-  if (q) filter.courseCode = { $regex: q, $options: 'i' };
+  if (q) filter.courseCode = { $regex: q, $options: "i" };
   const courses = await Course.find(filter).limit(8);
   return res.json(courses);
 });
@@ -95,9 +98,9 @@ const io = new SocketIOServer(httpServer, {
 io.engine.use(sessionMiddleware);
 
 // 把 io 挂到 app 上，routes 里可以用 req.app.get('io') 拿到并广播事件
-app.set('io', io);
+app.set("io", io);
 
-io.on('connection', (socket) => {
+io.on("connection", (socket) => {
   const userId = socket.request.session?.userId;
   if (!userId) {
     socket.disconnect();
@@ -111,21 +114,21 @@ io.on('connection', (socket) => {
   // 自动进入个人 channel，用于接收针对本人的通知（比如 join_rejected）
   socket.join(`user:${userId}`);
 
-  socket.on('join-room', async (roomUid) => {
-    if (typeof roomUid !== 'string') return;
+  socket.on("join-room", async (roomUid) => {
+    if (typeof roomUid !== "string") return;
     socket.join(`room:${roomUid}`);
     socket.data.joinedRooms.add(roomUid);
     await onUserPresent(roomUid, userId, io);
   });
 
-  socket.on('leave-room', async (roomUid) => {
-    if (typeof roomUid !== 'string') return;
+  socket.on("leave-room", async (roomUid) => {
+    if (typeof roomUid !== "string") return;
     socket.leave(`room:${roomUid}`);
     socket.data.joinedRooms.delete(roomUid);
     await onUserMaybeAbsent(roomUid, userId, io);
   });
 
-  socket.on('disconnect', async () => {
+  socket.on("disconnect", async () => {
     for (const roomUid of socket.data.joinedRooms) {
       await onUserMaybeAbsent(roomUid, userId, io);
     }
@@ -153,12 +156,12 @@ async function onUserPresent(roomUid, userId, io) {
     const onlineUsers = [...map.keys()];
     // 如果是房间里第一个在线的人，开始 session 计时
     if (onlineUsers.length === 1) {
-      const StudyRoom = mongoose.model('StudyRoom');
+      const StudyRoom = mongoose.model("StudyRoom");
       const room = await StudyRoom.findOne({ uid: roomUid });
       if (room && room.active && !room.sessionStartAt) {
         room.sessionStartAt = new Date();
         await room.save();
-        io.to(`room:${roomUid}`).emit('session-start', {
+        io.to(`room:${roomUid}`).emit("session-start", {
           sessionStartAt: room.sessionStartAt,
         });
       }
@@ -167,15 +170,15 @@ async function onUserPresent(roomUid, userId, io) {
 
   // 无论是首次还是额外 tab，都广播一次 presence 列表 ——
   // 这样新 tab 能拿到最新状态，旧的 tab 收到会刀重复也不是问题
-const onlineUsers = [...map.keys()];
-  io.to(`room:${roomUid}`).emit('presence', { online: onlineUsers });
+  const onlineUsers = [...map.keys()];
+  io.to(`room:${roomUid}`).emit("presence", { online: onlineUsers });
 
   // 对新连上的 socket 独单发一份当前 session 状态（如果现有 session 正在进行，
   // 新 tab 需要知道 sessionStartAt）。但这里没 socket 引用，改成广播也行
-  const StudyRoom2 = mongoose.model('StudyRoom');
-  const room2 = await StudyRoom2.findOne({ uid: roomUid }, 'sessionStartAt');
+  const StudyRoom2 = mongoose.model("StudyRoom");
+  const room2 = await StudyRoom2.findOne({ uid: roomUid }, "sessionStartAt");
   if (room2?.sessionStartAt) {
-    io.to(`room:${roomUid}`).emit('session-start', {
+    io.to(`room:${roomUid}`).emit("session-start", {
       sessionStartAt: room2.sessionStartAt,
     });
   }
@@ -192,18 +195,20 @@ async function onUserMaybeAbsent(roomUid, userId, io) {
   }
 
   const onlineUsers = [...map.keys()];
-  io.to(`room:${roomUid}`).emit('presence', { online: onlineUsers });
+  io.to(`room:${roomUid}`).emit("presence", { online: onlineUsers });
 
   // 所有人都下线了，清 session
   if (onlineUsers.length === 0) {
-    const StudyRoom = mongoose.model('StudyRoom');
+    const StudyRoom = mongoose.model("StudyRoom");
     const room = await StudyRoom.findOne({ uid: roomUid });
     if (room && room.sessionStartAt) {
       room.sessionStartAt = null;
       await room.save();
-      io.to(`room:${roomUid}`).emit('session-end');
+      io.to(`room:${roomUid}`).emit("session-end");
     }
   }
 }
 
-httpServer.listen(process.env.PORT ?? 3000, () => console.log("server running"));
+httpServer.listen(process.env.PORT ?? 3000, () =>
+  console.log("server running"),
+);

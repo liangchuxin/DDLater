@@ -67,14 +67,6 @@ body {
 .header-brand img {
   width: 110px;
 }
-.brand-word {
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-}
-.brand-word span {
-  color: var(--green);
-}
 .header-mid {
   flex: 1;
   display: flex;
@@ -204,6 +196,26 @@ body {
   padding: 34px 39px 101px;
 }
 
+/* loading 态: loader 跨满 grid 所有列,占个合理高度。
+   放在 grid 容器内部,这样 grid 容器本身到 loaded 的切换不会触发布局重算 */
+.cards-loading {
+  grid-column: 1 / -1;
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* fill variant: 给 tasks feed 用。占满到视口底部,让 loading 时 Study Rooms section
+   被推出视口,用户进 dashboard 只看见 tasks section + loader。
+   200px = header(68) + main-inner 上 padding(34) + sec-head(~34) + filter-bar(~50) + 缓冲
+   align-items flex-start + padding-top 让 loader 靠上一点,不是入场居中 */
+.cards-loading--fill {
+  min-height: calc(100vh - 200px);
+  align-items: flex-start;
+  padding-top: 120px;
+}
+
 /* ── SECTION HEADER ── */
 .sec-head {
   margin-bottom: 17px;
@@ -250,9 +262,13 @@ body {
 }
 
 /* ── TASK GRID ── */
+/* minmax(0, 1fr) 而不是 1fr: 默认 1fr 展开是 minmax(auto, 1fr),会被子元素的
+   min-content 尺寸擑开(比如 canvas 默认 300×150 会让列变宽)。用 minmax(0, 1fr)
+   强制所有列宽度单纯由 1fr 分配,任何 overflow content 被子元素自己的
+   overflow: hidden 裁掉 */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 11px;
   margin-bottom: 45px;
 }
@@ -422,13 +438,6 @@ body {
   background: rgba(130, 130, 110, 0.3);
 }
 
-/* pixel avatar */
-.px {
-  position: relative;
-  z-index: 1;
-  image-rendering: pixelated;
-}
-
 /* card body */
 .card-body {
   padding: 18px 20px 20px;
@@ -455,10 +464,6 @@ body {
 .av-g {
   background: var(--greenbg);
   color: var(--green);
-}
-.av-r {
-  background: var(--redbg);
-  color: var(--red);
 }
 .who-name {
   font-size: 17px;
@@ -514,131 +519,4 @@ body {
 }
 .ddl-o {
   color: var(--green);
-}
-
-/* ── STUDY ROOMS (保留样式，section 暂时隐藏) ── */
-.rooms-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 11px;
-}
-.room-card {
-  background: var(--paper);
-  padding: 25px 28px;
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    transform 0.18s;
-  position: relative;
-}
-.room-card:hover {
-  transform: translateY(-3px);
-}
-.room-card.featured {
-  grid-column: span 2;
-  background: var(--greenbg);
-}
-.room-card.featured::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--green);
-}
-.room-card.empty {
-  opacity: 0.5;
-}
-.room-card.create {
-  background: var(--bg2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  grid-column: span 2;
-  min-height: 130px;
-}
-.room-name {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 6px;
-  letter-spacing: -0.01em;
-}
-.room-meta {
-  display: flex;
-  align-items: center;
-  gap: 17px;
-  font-family: "DM Mono", monospace;
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 14px;
-}
-.room-live {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--green);
-}
-.room-live-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--greenl);
-  animation: blink 2s infinite;
-}
-.room-avatars {
-  display: flex;
-  gap: 6px;
-}
-.rav {
-  width: 36px;
-  height: 36px;
-  font-family: "DM Mono", monospace;
-  font-size: 11px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg2);
-  color: var(--muted);
-}
-.rav-g {
-  background: var(--greenbg);
-  color: var(--green);
-}
-.room-tags {
-  display: flex;
-  gap: 7px;
-  margin-top: 14px;
-}
-.room-tag {
-  font-family: "DM Mono", monospace;
-  font-size: 13px;
-  padding: 3px 10px;
-  background: var(--bg2);
-  color: var(--muted);
-  letter-spacing: 0.05em;
-}
-.room-tag.green {
-  background: rgba(45, 138, 62, 0.15);
-  color: var(--green);
-}
-.room-join {
-  margin-top: 17px;
-  font-family: "DM Mono", monospace;
-  font-size: 13px;
-  color: var(--green);
-  letter-spacing: 0.06em;
-}
-.room-create-label {
-  font-family: "DM Mono", monospace;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.room-create-sub {
-  font-size: 13px;
-  color: var(--muted);
 }

@@ -13,25 +13,6 @@ import {
 } from "./roomConfig";
 import { sideCenterX } from "./liveUtils";
 
-// ── Label 帮手 ──
-function Label({ children, bottom = -20 }) {
-  return (
-    <div
-      className="live-canvas-label"
-      style={{
-        position: "absolute",
-        bottom,
-        left: "50%",
-        transform: "translateX(-50%)",
-        whiteSpace: "nowrap",
-        zIndex: Z_LAYERS.label,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
 // ── SideSlot：bean_bag / bed / sofa 三种 ──
 function SideSlot({ entry, position, canvasW, canvasH, charH }) {
   const { furniture, member } = entry;
@@ -109,7 +90,6 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
         >
           {playerAvatar()}
         </div>
-        <Label>{member.displayName}</Label>
       </div>
     );
   }
@@ -178,7 +158,6 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
             zIndex: z.top,
           }}
         />
-        <Label>{member.displayName}</Label>
       </div>
     );
   }
@@ -232,7 +211,6 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
         >
           {playerAvatar(L.charClipRows)}
         </div>
-        <Label>{member.displayName}</Label>
       </div>
     );
   }
@@ -367,27 +345,6 @@ export default function RoomScene({
               }}
             />
           )}
-
-          {/* Desk 名字 label（在桌子下面） */}
-          {deskEntries.map((entry) => {
-            const centerX = deskCharCenters[entry.slotIndex];
-            return (
-              <div
-                key={`desk-label-${entry.memberIdx}`}
-                style={{
-                  position: "absolute",
-                  left: centerX,
-                  bottom: deskImgBottom - 24,
-                  transform: "translateX(-50%)",
-                  zIndex: deskZ.furniture + 5,
-                }}
-              >
-                <div className="live-canvas-label">
-                  {entry.member.displayName}
-                </div>
-              </div>
-            );
-          })}
 
           {/* Side slot 家具 */}
           {leftEntry && (

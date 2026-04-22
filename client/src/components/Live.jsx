@@ -26,7 +26,9 @@ import {
   extendSeats,
   sideCenterX,
 } from "./live/liveUtils";
-import { useRoomSocket } from "../hooks/useSocket";
+import { useRoomSocket, useSocketEvent } from "../hooks/useSocket";
+import PushOutLoader from "./PushOutLoader";
+import { useConfirm } from "./ConfirmModal";
 import "../styles/Live.css";
 
 const API = import.meta.env.VITE_API_URL;
@@ -46,6 +48,9 @@ export default function Live() {
   const [self, setSelf] = useState(null);
   const [selfProfile, setSelfProfile] = useState(null);
   const [selfTasks, setSelfTasks] = useState([]);
+
+  // ── 确认弹窗 hook ──
+  const { confirm, modal: confirmModal } = useConfirm();
 
   // ── Room 数据 ──
   const [room, setRoom] = useState(null);
@@ -134,12 +139,10 @@ export default function Live() {
     return () => clearInterval(id);
   }, [sessionStartAt]);
 
-  // ── 派生：admin 判断 ──
+  // ── 派生：admin (= owner) 判断 ──
   const isAdmin = useMemo(() => {
     if (!room || !self) return false;
-    const myId = String(self._id);
-    if (String(room.owner?._id ?? room.owner) === myId) return true;
-    return room.admins?.some((a) => String(a._id ?? a) === myId);
+    return String(room.owner?._id ?? room.owner) === String(self._id);
   }, [room, self]);
 
   // ── Socket：订阅房间事件 ──
@@ -162,11 +165,13 @@ export default function Live() {
       const needsRefetch = [
         "member_joined",
         "leave",
+        "member_kicked",
         "task_add",
         "task_remove",
         "task_complete",
         "task_progress",
         "join_request", // pendingMembers 列表变了
+        "join_rejected", // pendingMembers 也变了,不 refetch 会导致其他 admin 的按钮不消失
       ].includes(event.type);
       if (needsRefetch)
         refetchRoom()
@@ -211,9 +216,54 @@ export default function Live() {
       credentials: "include",
     });
     if (r.ok) {
+      // 注意也要 refetchRoom 让 pendingMembers 同步,否则 UI 里按钮不会消失
+      const fresh = await refetchRoom();
+      setRoom(fresh);
       await refetchEvents();
     }
   };
+
+  // ── Owner kick member ──
+  // 后端广播 member_kicked 事件后 socket 会触发 refetch,这里手动再 refetch 一次减延迟感
+  // 如果当前选中的就是被踢的那个成员,切回 self panel
+  const onKick = async (userId) => {
+    const kickedMember = members.find(
+      (m) => String(m.userId) === String(userId),
+    );
+    const r = await fetch(`${API}/api/rooms/${room._id}/kick/${userId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (r.ok) {
+      const fresh = await refetchRoom();
+      setRoom(fresh);
+      if (kickedMember && selected === kickedMember.uid) {
+        setSelected("self");
+      }
+    } else {
+      const data = await r.json().catch(() => ({}));
+      alert(data.error || "Failed to remove user.");
+    }
+  };
+
+  // ── 自己被别人踢了 ──
+  // 个人 channel 'kicked-from-room' 事件,后端在踢的时候 emit
+  // 在 Live 页听到直接走,不然继续在这里的话会被回及下次 refetch 判为非 member
+  useSocketEvent(
+    "kicked-from-room",
+    (data) => {
+      alert(`You were removed from ${data?.roomName || "this room"}.`);
+      navigate("/rooms");
+    },
+    true,
+  );
+
+  // ── 派生：pendingMembers user id Set ──
+  // HistoryList 靠这个决定 join_request 旁的按钮要不要显示
+  const pendingUserIds = useMemo(() => {
+    if (!room?.pendingMembers) return new Set();
+    return new Set(room.pendingMembers.map((u) => String(u._id ?? u)));
+  }, [room]);
 
   // ── 派生：members + roomTasks ──
   // members = 场景中除 self 外的所有人（要渲染成角色）
@@ -525,7 +575,14 @@ export default function Live() {
 
   // Leave room：调后端 DELETE，后端自动处理 owner 转移 / 最后人 → inactive
   const onLeave = async () => {
-    if (!window.confirm("Leave this room?")) return;
+    const ok = await confirm({
+      title: "Leave this room?",
+      message:
+        "You can rejoin anytime, but your current session in this room will end.",
+      confirmLabel: "Leave",
+      variant: "danger",
+    });
+    if (!ok) return;
     const r = await fetch(`${API}/api/rooms/${room._id}/leave`, {
       method: "DELETE",
       credentials: "include",
@@ -551,9 +608,15 @@ export default function Live() {
   }, [room, roomUid, navigate]);
 
   if (roomError) return null;
-  if (!self) return null;
-  if (!room) return null;
-  if (room.isMember === false) return null;
+  if (room && room.isMember === false) return null;
+  if (!self || !room) {
+    return (
+      <div className="live-loading">
+        <PushOutLoader color="var(--green)" />
+        <div className="live-loading-text">entering the cozy room…</div>
+      </div>
+    );
+  }
 
   const roomName = room.name ?? "Study Room";
   const memberCount = room.members?.length ?? 1;
@@ -805,6 +868,25 @@ export default function Live() {
                     ? "your progress"
                     : "viewing"}
               </div>
+              {/* 踢人按钮: 只在看别的 member 且自己是 owner 时显示。
+                  放在 "viewing" 下面,和 name/mode 归为同一组 meta 信息 */}
+              {isAdmin && panelMember && (
+                <button
+                  type="button"
+                  className="live-panel-kick"
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: "Remove from room?",
+                      message: `${panelMember.displayName} will lose access to this room.`,
+                      confirmLabel: "Remove",
+                      variant: "danger",
+                    });
+                    if (ok) onKick(panelMember.userId);
+                  }}
+                >
+                  remove from room
+                </button>
+              )}
             </div>
             <div className="live-panel-body">
               {selected === "self" && (
@@ -818,6 +900,7 @@ export default function Live() {
                   isAdmin={isAdmin}
                   onApprove={onApprove}
                   onReject={onReject}
+                  pendingUserIds={pendingUserIds}
                 />
               )}
               {selected === "overall" && (
@@ -827,6 +910,7 @@ export default function Live() {
                   isAdmin={isAdmin}
                   onApprove={onApprove}
                   onReject={onReject}
+                  pendingUserIds={pendingUserIds}
                 />
               )}
               {panelMember && (
@@ -836,12 +920,14 @@ export default function Live() {
                   isAdmin={isAdmin}
                   onApprove={onApprove}
                   onReject={onReject}
+                  pendingUserIds={pendingUserIds}
                 />
               )}
             </div>
           </>
         )}
       </PixelBox>
+      {confirmModal}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import FeedCard from "./FeedCard";
 import StudyRoomsSection from "./StudyRoomsSection";
+import PushOutLoader from "./PushOutLoader";
 import { useNavigate } from "react-router-dom";
 
 const API = import.meta.env.VITE_API_URL;
@@ -218,39 +219,46 @@ export default function Dashboard() {
         </div>
 
         <div className="grid">
-          {!loading && filtered.length === 0 && (
-            <div
-              className="feed-empty"
-              style={{
-                gridColumn: "span 4",
-                padding: "48px 0",
-                textAlign: "center",
-                fontFamily: "DM Mono, monospace",
-                fontSize: 14,
-                color: "var(--muted)",
-                letterSpacing: "0.06em",
-              }}
-            >
-              No tasks yet.
+          {loading ? (
+            <div className="cards-loading cards-loading--fill">
+              <PushOutLoader color="var(--green)" />
             </div>
+          ) : (
+            <>
+              {filtered.length === 0 && (
+                <div
+                  style={{
+                    gridColumn: "span 4",
+                    padding: "48px 0",
+                    textAlign: "center",
+                    fontFamily: "DM Mono, monospace",
+                    fontSize: 14,
+                    color: "var(--muted)",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  No tasks yet.
+                </div>
+              )}
+
+              {filtered.map((t, idx) => (
+                <FeedCard key={t._id} {...taskToFeedCardProps(t, idx)} />
+              ))}
+
+              <div
+                className="card card-promo"
+                onClick={() => navigate("./avatar")}
+              >
+                <PixelPromo />
+                <div className="promo-title">
+                  Get your
+                  <br />
+                  pixel avatar!
+                </div>
+                <div className="promo-sub">COMING SOON →</div>
+              </div>
+            </>
           )}
-
-          {filtered.map((t, idx) => (
-            <FeedCard
-              key={t._id}
-              {...taskToFeedCardProps(t, idx)}
-            />
-          ))}
-
-          <div className="card card-promo" onClick={() => navigate("./avatar")}>
-            <PixelPromo />
-            <div className="promo-title">
-              Get your
-              <br />
-              pixel avatar!
-            </div>
-            <div className="promo-sub">COMING SOON →</div>
-          </div>
         </div>
 
         {/* ── Study Rooms ── */}

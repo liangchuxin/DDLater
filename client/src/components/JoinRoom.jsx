@@ -20,6 +20,8 @@ export function JoinRoomCodeForm({
   const [code, setCode] = useState(initialCode);
   const [status, setStatus] = useState("idle"); // idle | checking
   const [message, setMessage] = useState(null);
+  // infoMessage 用于非错误提示(比如 "room is full"),样式没有粉色框
+  const [infoMessage, setInfoMessage] = useState(null);
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -27,6 +29,7 @@ export function JoinRoomCodeForm({
     if (!trimmed || status === "checking") return;
     setStatus("checking");
     setMessage(null);
+    setInfoMessage(null);
 
     try {
       // 1. 确认 room 存在
@@ -56,7 +59,14 @@ export function JoinRoomCodeForm({
         return;
       }
 
-      // 4. 发申请
+      // 4. 房间满员:不发申请,显示 info(不是 error)
+      if (roomData.isFull) {
+        setStatus("idle");
+        setInfoMessage("This room is full (max 4 members).");
+        return;
+      }
+
+      // 5. 发申请
       const joinResp = await fetch(`${API}/api/rooms/${roomData.uid}/join`, {
         method: "POST",
         credentials: "include",
@@ -76,8 +86,8 @@ export function JoinRoomCodeForm({
     <>
       {!compact && <h1 className="create-room-title">Join a Study Room</h1>}
       <p className="create-room-sub">
-        Enter the 7-digit room code shared with you. An admin will approve your
-        request before you can enter.
+        Enter the 7-digit room code shared with you. The host will approve
+        your request before you can enter.
       </p>
       <form onSubmit={onSubmit} className="create-room-form">
         <label className="create-room-field">
@@ -88,6 +98,7 @@ export function JoinRoomCodeForm({
             onChange={(e) => {
               setCode(e.target.value);
               if (message) setMessage(null);
+              if (infoMessage) setInfoMessage(null);
             }}
             placeholder="e.g. 0991141"
             maxLength={10}
@@ -97,6 +108,7 @@ export function JoinRoomCodeForm({
           />
         </label>
         {message && <div className="create-room-error">{message}</div>}
+        {infoMessage && <div className="create-room-info">{infoMessage}</div>}
         <div className="create-room-actions">
           <button
             type="button"

@@ -76,6 +76,10 @@ export default function JoinConfirm() {
         setStatus("waiting");
         return;
       }
+      if (data.isFull) {
+        setStatus("full");
+        return;
+      }
       setStatus("idle");
     } catch (err) {
       setStatus("error");
@@ -170,7 +174,7 @@ export default function JoinConfirm() {
           <h1 className="create-room-title">Waiting for approval</h1>
           <p className="create-room-sub">
             Your request to join <strong>{room?.name}</strong> has been sent.
-            An admin needs to approve you before you can enter.
+            The host needs to approve you before you can enter.
           </p>
           <p
             className="create-room-sub"
@@ -193,6 +197,31 @@ export default function JoinConfirm() {
     );
   }
 
+  if (status === "full") {
+    return (
+      <GateLayout>
+      <div className="create-room-page">
+        <PixelBox variant="retro" className="create-room-card">
+          <h1 className="create-room-title">Room is full</h1>
+          <p className="create-room-sub">
+            <strong>{room?.name}</strong> already has the maximum of 4 members.
+            You can try again later if someone leaves.
+          </p>
+          <div className="create-room-actions">
+            <button
+              type="button"
+              className="create-room-btn primary"
+              onClick={() => navigate(backTo)}
+            >
+              Back
+            </button>
+          </div>
+        </PixelBox>
+      </div>
+      </GateLayout>
+    );
+  }
+
   if (status === "rejected") {
     return (
       <GateLayout>
@@ -200,7 +229,7 @@ export default function JoinConfirm() {
         <PixelBox variant="retro" className="create-room-card create-room-card-rejected">
           <h1 className="create-room-title create-room-title-rejected">Request rejected</h1>
           <p className="create-room-sub">
-            An admin of <strong>{room?.name}</strong> declined your request to join.
+            The host of <strong>{room?.name}</strong> declined your request to join.
           </p>
           <div className="create-room-actions">
             <button
@@ -224,7 +253,7 @@ export default function JoinConfirm() {
       <PixelBox variant="retro" className="create-room-card">
         <h1 className="create-room-title">Join {room?.name}?</h1>
         <p className="create-room-sub">
-          You're not a member of this room yet. Send a request and an admin
+          You're not a member of this room yet. Send a request and the host
           will approve you.
         </p>
         {message && <div className="create-room-error">{message}</div>}

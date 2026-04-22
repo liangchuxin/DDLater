@@ -1,0 +1,105 @@
+/* Push-out loader — 原 SCSS by jh3y (codepen),转成 vanilla CSS
+   内部尺寸 100×100 写死。外层 .push-out-wrap 负责 layout 尺寸,
+   .push-out 用 transform: scale 做视觉缩放。
+   颜色通过 --push-out-color 变量控制,默认用 theme 的 --ink */
+
+.push-out-wrap {
+  position: relative;
+  display: inline-block;
+  --push-out-color: var(--ink, #1a1a1a);
+}
+
+.push-out {
+  --duration: 0.85;
+  height: 100px;
+  width: 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 从左滑到右的小方块 */
+.push-out > div:nth-of-type(1) {
+  height: 20px;
+  width: 20px;
+  position: absolute;
+  animation: push-out-slide calc(var(--duration) * 1s) infinite alternate
+    ease-in-out;
+  transform: translate(0, -100%);
+  top: 100%;
+  left: 0;
+}
+.push-out > div:nth-of-type(1)::after {
+  animation: push-out-flip calc(var(--duration) * 1s) infinite alternate
+    ease-in-out;
+  background: var(--push-out-color);
+  content: "";
+  height: 100%;
+  position: absolute;
+  width: 100%;
+}
+
+/* 中间固定的小柱子 */
+.push-out > div:nth-of-type(2) {
+  background: var(--push-out-color);
+  height: 30px;
+  left: 50%;
+  position: absolute;
+  top: 100%;
+  transform: translate(-50%, -100%);
+  width: 20px;
+}
+
+/* 两边会被推出去的柱子 */
+.push-out::after,
+.push-out::before {
+  animation-timing-function: ease;
+  animation-iteration-count: infinite;
+  animation-duration: calc(var(--duration) * 4s);
+  background: var(--push-out-color);
+  bottom: 0;
+  content: "";
+  height: 40px;
+  position: absolute;
+  width: 20px;
+}
+.push-out::after {
+  animation-name: push-out-pushed-1;
+  right: 0;
+}
+.push-out::before {
+  animation-name: push-out-pushed-2;
+  left: 0;
+}
+
+@keyframes push-out-pushed-1 {
+  0%, 18.125%, 50%, 68.125%, 100% {
+    transform: translate(0, 0);
+  }
+  25%, 43.125%, 75%, 93.125% {
+    transform: translate(0, 100%);
+  }
+}
+@keyframes push-out-pushed-2 {
+  0%, 18.125%, 50%, 68.125%, 100% {
+    transform: translate(0, 100%);
+  }
+  25%, 43.125%, 75%, 93.125% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes push-out-flip {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(0, -80px) rotate(90deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(180deg);
+  }
+}
+@keyframes push-out-slide {
+  to {
+    transform: translate(0, -100%) translate(80px, 0);
+  }
+}

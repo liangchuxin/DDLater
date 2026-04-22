@@ -114,6 +114,14 @@
   border: 1px solid #e3a;
 }
 
+/* 非错误、非阻断性的提示。红字但不加框。 */
+.create-room-info {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: #a33;
+  line-height: 1.5;
+}
+
 .create-room-actions {
   display: flex;
   justify-content: flex-end;

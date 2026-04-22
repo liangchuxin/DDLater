@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import defaultAvatar from "../assets/default-avatar.png";
 import PixelBox from "./PixelBox";
+import { useConfirm } from "./ConfirmModal";
 import "../styles/Profile.css";
 
 const API = import.meta.env.VITE_API_URL;
@@ -12,6 +13,7 @@ export default function Profile() {
   const { uid } = useParams();             // undefined when at /user
   const [profile, setProfile] = useState(null);
   const navigate = useNavigate();
+  const { confirm, modal: confirmModal } = useConfirm();
 
   const isOwnProfile = !uid || uid === currentUser?.uid;
 
@@ -30,7 +32,13 @@ export default function Profile() {
   }, [fetchProfile]);
 
   const handleDeleteRoom = async (roomId, roomName) => {
-    if (!window.confirm(`Delete room "${roomName}"?`)) return;
+    const ok = await confirm({
+      title: "Delete this room?",
+      message: `"${roomName}" will be permanently closed. This can't be undone.`,
+      confirmLabel: "Delete",
+      variant: "danger",
+    });
+    if (!ok) return;
     const res = await fetch(`${API}/api/rooms/${roomId}`, {
       method: "DELETE",
       credentials: "include",
@@ -168,6 +176,7 @@ export default function Profile() {
           </div>
         </div>
       </div>
+      {confirmModal}
     </main>
   );
 }

@@ -1,0 +1,90 @@
+/* ConfirmModal — 通用确认弹窗,替代 window.confirm()。
+   风格跟 CreateRoom / JoinConfirm 的 PixelBox card 对齐:米底 #f5f4ee、标题 22px、按钮 13px。 */
+
+/* 轻微半透 backdrop,点空白区等于 cancel */
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  padding: 24px;
+}
+
+/* 米色 card,跟 join modal 一致 */
+.confirm-modal-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 32px 26px;
+  --pixel-base: #f5f4ee;
+  --pixel-highlight: #ffffff;
+  --pixel-border-color: #2d2d2a;
+  --pixel-shadow: rgba(45, 45, 42, 0.18);
+  background: var(--pixel-base);
+}
+
+.confirm-modal-title {
+  font-family: "StardewValley", "DM Mono", monospace;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--ink, #1a1a1a);
+  margin: 0 0 8px;
+}
+
+.confirm-modal-message {
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  color: var(--muted, #777);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* 按钮基础:跟 create-room-btn 对齐 (13px mono, padding 10 20, 1.5px 深边框) */
+.confirm-modal-btn {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  padding: 10px 20px;
+  border: 1.5px solid #2d2d2a;
+  background: #fff;
+  color: var(--ink, #1a1a1a);
+  cursor: pointer;
+  transition:
+    transform 0.08s ease,
+    background 0.12s;
+}
+.confirm-modal-btn:active {
+  transform: translateY(1px);
+}
+
+.confirm-modal-btn.cancel:hover {
+  background: var(--bg2, #f2f0ea);
+}
+
+/* primary: 绿底白字(非破坏性 confirm 默认) */
+.confirm-modal-btn.primary {
+  background: var(--green, #2d8a3e);
+  color: #fff;
+  border-color: #1f5e2a;
+}
+.confirm-modal-btn.primary:hover {
+  background: #246b32;
+}
+
+/* danger: 米底红边红字 —— 跟 card 同色系,红色仅出现在边框和文字上,
+   整体轻柔但警示意图明确。hover 时用半透红色微微填充 */
+.confirm-modal-btn.danger {
+  background: #f5f4ee;
+  color: var(--red, #b83030);
+  border-color: var(--red, #b83030);
+}
+.confirm-modal-btn.danger:hover {
+  background: rgba(184, 48, 48, 0.08);
+}

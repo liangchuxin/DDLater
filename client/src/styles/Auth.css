@@ -1,0 +1,148 @@
+/* Auth pages (Login + Register) — 大图做模糊背景铺满,card 居中浮在上面。
+   图放 /client/public/auth/characters.png,CSS 让它 object-fit: cover 全屏,
+   加 blur 做柔和背景。上面一层半透遮罩让 card 更突出。 */
+
+.auth-page {
+  position: relative;
+  min-height: 100dvh;
+  background: var(--bg, #f5f4ee);
+  overflow: hidden;
+}
+
+/* 背景图: 绝对定位铺满视口,cover 保持比例。
+   blur 模糊 + scale 轻微放大防止模糊边缘漏出视口。
+   blur 数字调模糊强度: 想更清晰改 2-3px,更模糊改 10-15px。 */
+.auth-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(4px);
+  transform: scale(1.03);
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* PixelBox card: 整页正中央 */
+.auth-card-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 48px));
+  z-index: 3;
+}
+
+.auth-card {
+  padding: 34px 38px 30px;
+  --pixel-base: #ffffff;
+  --pixel-highlight: #eff0ea;
+  --pixel-border-color: #2d2d2a;
+  --pixel-shadow: rgba(45, 45, 42, 0.18);
+  background: var(--pixel-base);
+}
+
+.auth-title {
+  font-family: "StardewValley", "DM Mono", monospace;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+  color: var(--ink, #1a1a1a);
+}
+
+.auth-sub {
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  color: var(--muted, #777);
+  margin: 0 0 22px;
+  line-height: 1.5;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-label {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted, #777);
+}
+
+.auth-input {
+  font-family: "DM Sans", sans-serif;
+  font-size: 15px;
+  padding: 10px 12px;
+  border: 1.5px solid #2d2d2a;
+  background: #fff;
+  outline: none;
+  border-radius: 0;
+}
+.auth-input:focus {
+  border-color: var(--green, #2d8a3e);
+}
+
+.auth-btn {
+  margin-top: 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 11px 22px;
+  background: var(--green, #2d8a3e);
+  color: #fff;
+  border: 1.5px solid #1f5e2a;
+  cursor: pointer;
+  transition: transform 0.08s ease;
+}
+.auth-btn:active {
+  transform: translateY(1px);
+}
+
+.auth-msg {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  padding: 8px 10px;
+  line-height: 1.5;
+}
+.auth-msg.error {
+  color: #a33;
+  background: #fdecec;
+  border: 1px solid #e3a;
+}
+.auth-msg.success {
+  color: var(--green, #2d8a3e);
+  background: #eef7ef;
+  border: 1px solid #b5d8bc;
+}
+
+.auth-swap {
+  margin: 20px 0 0;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  color: var(--muted, #777);
+  text-align: center;
+}
+.auth-swap-link {
+  color: var(--green, #2d8a3e);
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+}
+.auth-swap-link:hover {
+  opacity: 0.7;
+}

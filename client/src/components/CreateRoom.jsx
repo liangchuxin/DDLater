@@ -50,7 +50,7 @@ export default function CreateRoom() {
       <PixelBox variant="retro" className="create-room-card">
         <h1 className="create-room-title">Create a Study Room</h1>
         <p className="create-room-sub">
-          You'll be the admin. Share the room code with friends to let them join.
+          You'll be the host. Share the room code with friends to let them join.
         </p>
 
         <form onSubmit={onSubmit} className="create-room-form">

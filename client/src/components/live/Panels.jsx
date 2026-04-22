@@ -30,7 +30,9 @@ function formatRelative(iso) {
 }
 
 // 根据 event type 返回渲染的元素 & 是否显示 approve/reject 按钮
-// 名字用 <strong> 包住，保持深色；其他文案是淡色
+// showApproveButton 只标记 "这个 event type 有权显示按钮",是否真的显示
+// 还要看当前 actor 是否在 pendingMembers 里。以前用 ev.resolvedAt 判断
+// 容易与 DB 不同步(resolvedAt 是在后端 updateMany 改的,不走 broadcast)。
 function describeEvent(ev) {
   const who = <strong>{ev.actor?.displayName ?? "Someone"}</strong>;
   const task = ev.payload?.taskTitle ? `"${ev.payload.taskTitle}"` : "a task";
@@ -45,6 +47,13 @@ function describeEvent(ev) {
       return { text: <>{who} joined the room</>, showApproveButton: false };
     case "leave":
       return { text: <>{who} left the room</>, showApproveButton: false };
+    case "member_kicked": {
+      const target = ev.payload?.targetDisplayName || "a member";
+      return {
+        text: <>{who} removed <strong>{target}</strong> from the room</>,
+        showApproveButton: false,
+      };
+    }
     case "task_add":
       return { text: <>{who} added {task}</>, showApproveButton: false };
     case "task_remove":
@@ -65,8 +74,11 @@ function describeEvent(ev) {
 }
 
 // ── History 列表：从 events 数据渲染 ──
-// isAdmin + onApprove/onReject 只在用于 join_request 事件时才用到
-function HistoryList({ events, isAdmin, onApprove, onReject }) {
+// isAdmin + onApprove/onReject + pendingUserIds 只在 join_request 事件显示按钮时用到
+// 按钮显示需要两个条件同时满足:
+//   1. ev.resolvedAt 为 null (这条特定 event 自己没被处理过)
+//   2. actor 当前在 pendingMembers 里
+function HistoryList({ events, isAdmin, onApprove, onReject, pendingUserIds }) {
   if (!events || events.length === 0) {
     return (
       <div
@@ -84,7 +96,16 @@ function HistoryList({ events, isAdmin, onApprove, onReject }) {
     <div className="live-history-list">
       {events.map((ev) => {
         const { text, showApproveButton } = describeEvent(ev);
-        const showButtons = isAdmin && showApproveButton && !ev.resolvedAt;
+        // 两个条件同时用:
+        //  - !ev.resolvedAt: 这条 event 自己还没被 approve/reject
+        //  - stillPending: 这个人当前确实还在等待审批
+        // 只看 pending 会在同一人第二次 request 时把旧 event 也点亮。
+        // 只看 resolvedAt 在多 tab / 多 admin 场景下会 stale。两者一起用互相补足。
+        const actorId = String(ev.actor?._id ?? "");
+        const stillPending = actorId && pendingUserIds?.has(actorId);
+        const notResolved = !ev.resolvedAt;
+        const showButtons =
+          isAdmin && showApproveButton && stillPending && notResolved;
         return (
           <div key={ev._id} className="live-history-item">
             <div className="live-history-text">{text}</div>
@@ -192,6 +213,7 @@ export function SelfPanel({
   isAdmin,
   onApprove,
   onReject,
+  pendingUserIds,
 }) {
   const [showModal, setShowModal] = useState(false);
   const [menuFor, setMenuFor] = useState(null);
@@ -347,6 +369,7 @@ export function SelfPanel({
           isAdmin={isAdmin}
           onApprove={onApprove}
           onReject={onReject}
+          pendingUserIds={pendingUserIds}
         />
       </div>
       {showModal && (
@@ -365,7 +388,14 @@ export function SelfPanel({
 }
 
 // ── MemberPanel：别人的只读任务 ──
-export function MemberPanel({ member, events, isAdmin, onApprove, onReject }) {
+export function MemberPanel({
+  member,
+  events,
+  isAdmin,
+  onApprove,
+  onReject,
+  pendingUserIds,
+}) {
   return (
     <>
       <div className="live-task-section">
@@ -412,6 +442,7 @@ export function MemberPanel({ member, events, isAdmin, onApprove, onReject }) {
           isAdmin={isAdmin}
           onApprove={onApprove}
           onReject={onReject}
+          pendingUserIds={pendingUserIds}
         />
       </div>
     </>
@@ -419,7 +450,7 @@ export function MemberPanel({ member, events, isAdmin, onApprove, onReject }) {
 }
 
 // ── OverallPanel：所有人进度汇总 ──
-export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject }) {
+export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject, pendingUserIds }) {
   return (
     <>
       <div className="live-task-section">
@@ -462,6 +493,7 @@ export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject 
           isAdmin={isAdmin}
           onApprove={onApprove}
           onReject={onReject}
+          pendingUserIds={pendingUserIds}
         />
       </div>
     </>

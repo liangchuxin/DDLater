@@ -78,21 +78,11 @@
 .rooms-page .rfull-member {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
-.rooms-page .rfull-member.afk { opacity: 0.4; }
 .rooms-page .rfm-name {
   font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.06em;
   text-transform: uppercase; color: #fff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.rooms-page .rfm-prog {
-  font-family: 'DM Mono', monospace; font-size: 12px;
-  color: #fff; font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
-}
-.rooms-page .rfm-prog.urgent { color: #ffb3b3; }
-.rooms-page .rfm-afk {
-  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted);
 }
 
 /* ── card body ── */
@@ -137,29 +127,6 @@
 .rooms-page .rcard-footer .ddl-u { color: var(--red); }
 .rooms-page .rcard-footer .ddl-s { color: var(--amber); }
 .rooms-page .rcard-footer .ddl-o { color: var(--green); }
-.rooms-page .rcard-cta {
-  margin-top: 8px;
-  font-family: 'DM Mono', monospace; font-size: 13px;
-  color: var(--green); letter-spacing: 0.05em;
-}
-
-/* ── w3: body-row splits left+sparkline ── */
-.rooms-page .rcard.w3 .rcard-body-row {
-  display: flex;
-  border-top: 1.5px solid var(--bg2);
-}
-.rooms-page .rcard.w3 .rcard-body {
-  flex: 1; min-width: 0;
-  border-top: none;
-}
-.rooms-page .rcard-sparkline-panel {
-  width: 180px; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  padding: 16px 18px;
-}
-.rooms-page .sparkline-svg {
-  width: 100%; height: 70px; overflow: visible;
-}
 
 /* ── create room ── */
 .rooms-page .rcard-create {
