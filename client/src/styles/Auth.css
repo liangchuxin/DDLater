@@ -1,7 +1,3 @@
-/* Auth pages (Login + Register) — 大图做模糊背景铺满,card 居中浮在上面。
-   图放 /client/public/auth/characters.png,CSS 让它 object-fit: cover 全屏,
-   加 blur 做柔和背景。上面一层半透遮罩让 card 更突出。 */
-
 .auth-page {
   position: relative;
   min-height: 100dvh;
@@ -9,9 +5,6 @@
   overflow: hidden;
 }
 
-/* 背景图: 绝对定位铺满视口,cover 保持比例。
-   blur 模糊 + scale 轻微放大防止模糊边缘漏出视口。
-   blur 数字调模糊强度: 想更清晰改 2-3px,更模糊改 10-15px。 */
 .auth-bg {
   position: absolute;
   inset: 0;
@@ -25,7 +18,6 @@
   user-select: none;
 }
 
-/* PixelBox card: 整页正中央 */
 .auth-card-wrap {
   position: absolute;
   top: 50%;

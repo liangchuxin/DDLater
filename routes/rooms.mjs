@@ -20,8 +20,7 @@ async function uniqueRoomUID() {
   return uid;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-// 通过 _id 或 uid 找房间。前端 join 页从 code 输入只能拿到 uid，所以都要支持。
+// Lookup a room by _id or uid. The join page only has uid (the 7-digit code).
 async function findRoom(idOrUid) {
   if (mongoose.Types.ObjectId.isValid(idOrUid)) {
     const byId = await StudyRoom.findById(idOrUid);
@@ -34,7 +33,7 @@ function isAdmin(room, userId) {
   return String(room.owner) === String(userId);
 }
 
-// 记录一条事件。返回 populate 过 actor profile 的版本，方便调用方直接广播。
+// Record an event. Returns an actor-populated version ready for broadcast.
 async function emitEvent(roomDoc, type, actorId, payload = {}) {
   const ev = await RoomEvent.create({
     room: roomDoc._id,
@@ -45,16 +44,17 @@ async function emitEvent(roomDoc, type, actorId, payload = {}) {
   return populateEvent(ev);
 }
 
-// 广播事件到这个 room 的所有 socket 订阅者。
-// admin-only 事件也发给所有人，前端自己过滤（因为我们不知道每个 socket 是不是 admin）。
-// 这样实现简单；安全面没问题，GET /events 过滤过，这里广播的内容不包含敏感信息。
+// Broadcast to all sockets subscribed to this room.
+// Admin-only events are sent to everyone and filtered on the client (we don't
+// track per-socket admin state). Safe because GET /events already filters, and
+// the broadcast payload contains nothing sensitive.
 function broadcast(req, roomDoc, event) {
   const io = req.app?.get('io');
   if (!io) return;
   io.to(`room:${roomDoc.uid}`).emit('room-event', event);
 }
 
-// 给 event 挂上 actor 的 profile（displayName / avatar / uid），前端渲染用
+// Attach actor profile (displayName / avatar / uid) to an event for rendering.
 async function populateEvent(ev) {
   const profile = await Profile.findOne(
     { user: ev.actor },
@@ -83,9 +83,7 @@ const ADMIN_ONLY_EVENT_TYPES = new Set([
   'join_rejected',
 ]);
 
-// ── Rooms: list / create / read / update ────────────────────────────────────
-
-// GET /api/rooms - 获取所有 active 房间列表
+// GET /api/rooms - list all active rooms
 router.get('/', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
 
@@ -116,7 +114,7 @@ router.get('/', async (req, res) => {
   return res.json(result);
 });
 
-// POST /api/rooms - 创建房间（创建者自动成为 owner + 第一个 member）
+// POST /api/rooms - create a room (creator becomes owner + first member)
 router.post('/', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const { name, background, furnitures } = req.body;
@@ -134,7 +132,7 @@ router.post('/', async (req, res) => {
   return res.json(room);
 });
 
-// PATCH /api/rooms/:id - owner 修改房间
+// PATCH /api/rooms/:id - owner edits room
 router.patch('/:id', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -155,9 +153,8 @@ router.patch('/:id', async (req, res) => {
   return res.json(room);
 });
 
-// GET /api/rooms/:id - 获取单个房间
-// 如果调用者是 member/admin/owner：返回完整数据（含 members, tasks, pendingMembers）
-// 如果不是：返回精简数据 { uid, name, active, isMember: false, isPending }，不泄露成员信息
+// GET /api/rooms/:id - fetch a single room.
+// If caller is a member: full data. Otherwise: minimal gate info only.
 router.get('/:id', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
 
@@ -179,7 +176,6 @@ router.get('/:id', async (req, res) => {
   const callerIsPending = room.pendingMembers.some((u) => u._id.equals(req.session.userId));
 
   if (!callerIsMember) {
-    // 非成员：只给最基本信息，不暴露其他成员
     return res.json({
       _id: room._id,
       uid: room.uid,
@@ -187,7 +183,7 @@ router.get('/:id', async (req, res) => {
       active: room.active,
       isMember: false,
       isPending: callerIsPending,
-      // 房间座位 max 4(desk 2 + side 2)。满了前端进 'full' 态,不给申请。
+      // Room seats max 4 (desk 2 + side 2). When full, frontend enters 'full' state.
       isFull: room.members.length >= 4,
     });
   }
@@ -213,16 +209,13 @@ router.get('/:id', async (req, res) => {
   });
 });
 
-// ── Events ──────────────────────────────────────────────────────────────────
-
 // GET /api/rooms/:id/events?limit=50&before=<date>
-// admin 能看全部；普通 member 过滤掉 admin-only 事件。
+// Admin sees all events; regular members don't see admin-only types.
 router.get('/:id/events', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
   if (!room) return res.status(404).json({ error: 'Room not found.' });
 
-  // 必须是 member 或 admin 才能看 events
   const isMember = room.members.some((m) => m.user.equals(req.session.userId));
   const admin = isAdmin(room, req.session.userId);
   if (!isMember && !admin)
@@ -240,9 +233,7 @@ router.get('/:id/events', async (req, res) => {
   return res.json(populated);
 });
 
-// ── Join flow ───────────────────────────────────────────────────────────────
-
-// POST /api/rooms/:id/join - 申请加入房间（进 pendingMembers），发 join_request 事件
+// POST /api/rooms/:id/join - request to join (adds to pendingMembers, emits join_request)
 router.post('/:id/join', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -252,7 +243,7 @@ router.post('/:id/join', async (req, res) => {
   const alreadyPending = room.pendingMembers.some((id) => id.equals(req.session.userId));
   if (alreadyMember) return res.status(400).json({ error: 'Already in this room.' });
   if (alreadyPending) return res.status(400).json({ error: 'Already requested.' });
-  // 房间座位 max 4;满了不收新申请(pending 不算,pending 被 approve 时也不会超)
+  // Max 4 members; pending doesn't count.
   if (room.members.length >= 4)
     return res.status(400).json({ error: 'This room is full (max 4 members).' });
 
@@ -264,7 +255,7 @@ router.post('/:id/join', async (req, res) => {
   return res.json({ message: 'Join request sent.', roomUid: room.uid });
 });
 
-// POST /api/rooms/:id/approve/:userId - 任何 admin 可以 approve
+// POST /api/rooms/:id/approve/:userId - any admin can approve
 router.post('/:id/approve/:userId', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -280,24 +271,24 @@ router.post('/:id/approve/:userId', async (req, res) => {
   room.members.push({ user: req.params.userId, tasks: [] });
   await room.save();
 
-  // 1) 把对应的 join_request 标记为已处理，前端据此隐藏 Approve 按钮
+  // Mark the related join_request as resolved so the Approve button hides.
   await RoomEvent.updateMany(
     { room: room._id, type: 'join_request', actor: req.params.userId, resolvedAt: null },
     { $set: { resolvedAt: new Date() } },
   );
-  // 2) admin-only 事件：join_approved（actor = admin，payload 记谁被批准）
+  // Admin-only event: join_approved (actor = admin, payload = approved user).
   const evApproved = await emitEvent(room, 'join_approved', req.session.userId, {
     targetUserId: req.params.userId,
   });
   broadcast(req, room, evApproved);
-  // 3) 大家可见：member_joined（actor = 新加入的人）
+  // Visible to all: member_joined (actor = the new member).
   const evJoined = await emitEvent(room, 'member_joined', req.params.userId);
   broadcast(req, room, evJoined);
 
   return res.json({ message: 'User approved.' });
 });
 
-// POST /api/rooms/:id/reject/:userId - 任何 admin 可以 reject
+// POST /api/rooms/:id/reject/:userId - any admin can reject
 router.post('/:id/reject/:userId', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -319,9 +310,9 @@ router.post('/:id/reject/:userId', async (req, res) => {
     });
     broadcast(req, room, ev);
 
-    // 额外给被 reject 的人发一个个人通知（通过 user:<id> channel）。
-    // 他在 waiting 页等着，收到后要能切到 rejected 态。
-    // room 的 join_rejected 是 admin-only，他订阅了也过滤不到；此处用个人 channel 单独发。
+    // Personal channel notification so the waiting user switches to 'rejected'.
+    // The room's join_rejected is admin-only; the rejected user is filtered out,
+    // so we send a per-user event instead.
     const io = req.app?.get('io');
     if (io) {
       io.to(`user:${req.params.userId}`).emit('join-rejected', {
@@ -333,9 +324,7 @@ router.post('/:id/reject/:userId', async (req, res) => {
   return res.json({ message: 'User rejected.' });
 });
 
-// ── Tasks in room ───────────────────────────────────────────────────────────
-
-// POST /api/rooms/:id/member/tasks - 自己加 task 进房间
+// POST /api/rooms/:id/member/tasks - self adds a task to the room
 router.post('/:id/member/tasks', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const { taskId } = req.body;
@@ -352,7 +341,7 @@ router.post('/:id/member/tasks', async (req, res) => {
   member.tasks.push(taskId);
   await room.save();
 
-  // payload 存 task 标题方便前端渲染 history 不用再去 populate
+  // Cache the task title in the event payload so history rendering doesn't re-populate.
   const task = await Task.findById(taskId, 'title');
   const ev = await emitEvent(room, 'task_add', req.session.userId, {
     taskId,
@@ -363,7 +352,7 @@ router.post('/:id/member/tasks', async (req, res) => {
   return res.json({ message: 'Task added to room.' });
 });
 
-// DELETE /api/rooms/:id/member/tasks/:taskId - 自己从房间移除 task
+// DELETE /api/rooms/:id/member/tasks/:taskId - self removes a task from the room
 router.delete('/:id/member/tasks/:taskId', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -387,11 +376,9 @@ router.delete('/:id/member/tasks/:taskId', async (req, res) => {
   return res.json({ message: 'Task removed from room.' });
 });
 
-// ── Leave / close ───────────────────────────────────────────────────────────
-
-// DELETE /api/rooms/:id/kick/:userId - owner 踢人
-// 被踢的人通过个人 channel 收到 'kicked-from-room' 自动离开
-// member_kicked 事件全员可见(不是 admin-only)——让剩下的成员看到"X removed Y"的 history
+// DELETE /api/rooms/:id/kick/:userId - owner kicks a member.
+// Kicked user receives 'kicked-from-room' on their personal channel and navigates out.
+// member_kicked is visible to all (not admin-only) so remaining members see the history.
 router.delete('/:id/kick/:userId', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -410,8 +397,7 @@ router.delete('/:id/kick/:userId', async (req, res) => {
   room.members = room.members.filter((m) => !m.user.equals(targetId));
   await room.save();
 
-  // 取被踢的人的 displayName,payload 带上给 history 渲染用
-  // (不 populate 的话 history 只能显示 "removed a member" 而不是具体名字)
+  // Include displayName in the payload so history can render "X removed Y".
   const targetProfile = await Profile.findOne({ user: targetId }, 'displayName');
   const ev = await emitEvent(room, 'member_kicked', req.session.userId, {
     targetUserId: String(targetId),
@@ -419,7 +405,7 @@ router.delete('/:id/kick/:userId', async (req, res) => {
   });
   broadcast(req, room, ev);
 
-  // 个人 channel 通知被踢的人,他的 Live 页会 navigate 走
+  // Personal notification so the kicked user's Live page navigates away.
   const io = req.app?.get('io');
   if (io) {
     io.to(`user:${targetId}`).emit('kicked-from-room', {
@@ -431,9 +417,9 @@ router.delete('/:id/kick/:userId', async (req, res) => {
   return res.json({ message: 'User removed.' });
 });
 
-// DELETE /api/rooms/:id/leave - 离开房间
-// 如果离开的是 owner，owner 转给 members 里剩下的第一个人。
-// 如果是最后一个 member，room 变为 inactive。
+// DELETE /api/rooms/:id/leave - leave a room.
+// If the owner leaves, ownership transfers to the first remaining member.
+// If the last member leaves, the room becomes inactive.
 router.delete('/:id/leave', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);
@@ -445,12 +431,10 @@ router.delete('/:id/leave', async (req, res) => {
   const leavingIsOwner = room.owner.equals(req.session.userId);
   room.members = room.members.filter((m) => !m.user.equals(req.session.userId));
 
-  // Owner 离开：转给 members 里第一个人
   if (leavingIsOwner && room.members.length > 0) {
     room.owner = room.members[0].user;
   }
 
-  // 最后一个 member 离开：room 变 inactive + 清 session
   if (room.members.length === 0) {
     room.active = false;
     room.sessionStartAt = null;
@@ -463,7 +447,7 @@ router.delete('/:id/leave', async (req, res) => {
   return res.json({ message: 'Left the room.' });
 });
 
-// DELETE /api/rooms/:id - 关闭房间（只有 owner 可以）
+// DELETE /api/rooms/:id - close a room (owner only).
 router.delete('/:id', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
   const room = await findRoom(req.params.id);

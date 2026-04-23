@@ -37,38 +37,38 @@ export default function Live() {
   const { uid: roomUid } = useParams();
   const navigate = useNavigate();
 
-  // ── 选中状态 ──
+  // Selection
   const [selected, setSelected] = useState("self");
 
-  // ── Auth 当前用户 ──
+  // Current auth user
   const [self, setSelf] = useState(null);
   const [selfProfile, setSelfProfile] = useState(null);
   const [selfTasks, setSelfTasks] = useState([]);
 
-  // ── 确认弹窗 hook ──
+  // Confirm dialog
   const { confirm, modal: confirmModal } = useConfirm();
 
-  // ── Room 数据 ──
+  // Room data
   const [room, setRoom] = useState(null);
   const [roomError, setRoomError] = useState(null);
   const [events, setEvents] = useState([]);
 
-  // ── Presence & session ──
-  const [onlineUserIds, setOnlineUserIds] = useState([]); // user _id 字串数组
-  const [sessionStartAt, setSessionStartAt] = useState(null); // ISO 时间或 null
-  const [now, setNow] = useState(Date.now()); // 每秒刷新让 session timer 走动
+  // Presence & session
+  const [onlineUserIds, setOnlineUserIds] = useState([]); // array of user _id strings
+  const [sessionStartAt, setSessionStartAt] = useState(null); // ISO string or null
+  const [now, setNow] = useState(Date.now()); // tick each second to drive session timer
 
-  // ── Badge 颜色 ──
+  // Badge color
   const [badgeColor, setBadgeColor] = useState("var(--green)");
   const [badgeShadow, setBadgeShadow] = useState("rgba(45,138,62,0.2)");
 
-  // ── 场景数据 ──
+  // Scene data
   const [furnitures, setFurnitures] = useState([]);
   const [seats, setSeats] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const sceneRef = useRef(null);
 
-  // ── Camera ──
+  // Camera
   const [cameraX, setCameraX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({
@@ -78,7 +78,7 @@ export default function Live() {
     moved: false,
   });
 
-  // ── Fetch：全局数据 ──
+  // Fetch: global data
   useEffect(() => {
     fetch(`${API}/api/auth/me`, { credentials: "include" })
       .then((r) => r.json())
@@ -95,8 +95,8 @@ export default function Live() {
       .catch(() => setFurnitures([]));
   }, []);
 
-  // ── Fetch：room 数据 ──
-  // 抽成独立函数，socket 收到事件或 approve/reject 后都调一次
+  // Fetch: room data.
+  // Extracted so socket events and approve/reject can reuse.
   const refetchRoom = useCallback(async () => {
     const r = await fetch(`${API}/api/rooms/${roomUid}`, {
       credentials: "include",
@@ -128,26 +128,26 @@ export default function Live() {
     refetchEvents().catch(() => {});
   }, [roomUid, refetchRoom, refetchEvents]);
 
-  // Session timer：每秒 tick 更新显示。sessionStartAt 为 null 时显示“0 studying”状态
+  // Session timer: tick each second. Null sessionStartAt means no active session.
   useEffect(() => {
     if (!sessionStartAt) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [sessionStartAt]);
 
-  // ── 派生：admin (= owner) 判断 ──
+  // Derived: admin (= owner) check
   const isAdmin = useMemo(() => {
     if (!room || !self) return false;
     return String(room.owner?._id ?? room.owner) === String(self._id);
   }, [room, self]);
 
-  // ── Socket：订阅房间事件 ──
-  // 收到事件后：
-  //   1. 将事件插到 events 列表开头，history UI 立刻更新
-  //   2. 如果事件会改变 room 成员/任务状态，重新 fetch room
+  // Socket: subscribe to room events.
+  // On incoming event:
+  //   1. Prepend to events list so history UI updates immediately
+  //   2. If the event changes member/task state, refetch room
   const handleRoomEvent = useCallback(
     (event) => {
-      // admin-only 事件对非 admin 过滤（后端 broadcast 没滤，前端自己滤）
+      // Admin-only events are broadcast to everyone; filter client-side.
       const adminOnly = [
         "join_request",
         "join_approved",
@@ -157,7 +157,7 @@ export default function Live() {
 
       setEvents((prev) => [event, ...prev]);
 
-      // 引起 members 列表/任务变化的事件，重新 fetch room
+      // Events that affect member list / tasks → refetch
       const needsRefetch = [
         "member_joined",
         "leave",
@@ -166,8 +166,8 @@ export default function Live() {
         "task_remove",
         "task_complete",
         "task_progress",
-        "join_request", // pendingMembers 列表变了
-        "join_rejected", // pendingMembers 也变了,不 refetch 会导致其他 admin 的按钮不消失
+        "join_request", // pendingMembers changed
+        "join_rejected", // pendingMembers changed; without refetch other admins' buttons won't disappear
       ].includes(event.type);
       if (needsRefetch)
         refetchRoom()
@@ -193,14 +193,14 @@ export default function Live() {
     handleSessionEnd,
   );
 
-  // ── Admin approve/reject ──
+  // Admin approve / reject
   const onApprove = async (userId) => {
     const r = await fetch(`${API}/api/rooms/${room._id}/approve/${userId}`, {
       method: "POST",
       credentials: "include",
     });
     if (r.ok) {
-      // socket 广播会自动刷新 events + room，但手动 refetch 一次减少延迟感
+      // Socket broadcast will refresh too, but a manual refetch reduces latency.
       const fresh = await refetchRoom();
       setRoom(fresh);
       await refetchEvents();
@@ -212,16 +212,16 @@ export default function Live() {
       credentials: "include",
     });
     if (r.ok) {
-      // 注意也要 refetchRoom 让 pendingMembers 同步,否则 UI 里按钮不会消失
+      // Refetch to sync pendingMembers, otherwise the button won't disappear.
       const fresh = await refetchRoom();
       setRoom(fresh);
       await refetchEvents();
     }
   };
 
-  // ── Owner kick member ──
-  // 后端广播 member_kicked 事件后 socket 会触发 refetch,这里手动再 refetch 一次减延迟感
-  // 如果当前选中的就是被踢的那个成员,切回 self panel
+  // Owner kick member.
+  // Socket broadcast triggers a refetch, but do one manually to cut perceived latency.
+  // If the currently selected member is the one kicked, reset selection to self.
   const onKick = async (userId) => {
     const kickedMember = members.find(
       (m) => String(m.userId) === String(userId),
@@ -242,9 +242,9 @@ export default function Live() {
     }
   };
 
-  // ── 自己被别人踢了 ──
-  // 个人 channel 'kicked-from-room' 事件,后端在踢的时候 emit
-  // 在 Live 页听到直接走,不然继续在这里的话会被回及下次 refetch 判为非 member
+  // I was kicked by someone else.
+  // Personal 'kicked-from-room' channel, emitted server-side at kick time.
+  // Leave immediately; otherwise the next refetch would see us as non-member.
   useSocketEvent(
     "kicked-from-room",
     (data) => {
@@ -254,18 +254,18 @@ export default function Live() {
     true,
   );
 
-  // ── 派生：pendingMembers user id Set ──
-  // HistoryList 靠这个决定 join_request 旁的按钮要不要显示
+  // Derived: Set of pendingMembers user ids.
+  // HistoryList uses this to decide whether to show approve/reject buttons.
   const pendingUserIds = useMemo(() => {
     if (!room?.pendingMembers) return new Set();
     return new Set(room.pendingMembers.map((u) => String(u._id ?? u)));
   }, [room]);
 
-  // ── 派生：members + roomTasks ──
-  // members = 场景中除 self 外的所有人（要渲染成角色）
-  // roomTasks = 自己在房间里的任务
-  // room.members 里自己也在内，"members" 变量单指别人
-  // 精简 room（非 member 的 gate 态）没有 members 字段，提前返回
+  // Derived: members + roomTasks.
+  // members = everyone in the scene except self (rendered as characters)
+  // roomTasks = my own tasks in this room
+  // room.members includes self; the local "members" variable excludes self.
+  // A trimmed room (gate state for non-members) has no members field, so return early.
   const { members, roomTasks } = useMemo(() => {
     if (!room || !self || !Array.isArray(room.members))
       return { members: [], roomTasks: [] };
@@ -281,7 +281,7 @@ export default function Live() {
       if (m.profile) {
         others.push({
           ...m.profile,
-          // 显式保留 User._id（presence 等地方要用）。注意 profile._id 不是 User._id
+          // Keep User._id explicitly (used for presence). profile._id is NOT User._id.
           userId: String(userId),
           tasks: m.tasks ?? [],
         });
@@ -290,8 +290,8 @@ export default function Live() {
     return { members: others, roomTasks: myTasks };
   }, [room, self]);
 
-  // ── 背景设置 ──
-  // room.background 存文件名+偏移；room 还没到 或 老数据没 background 时走 fallback
+  // Background setup.
+  // room.background stores filename + offsets; use fallback if room not ready or legacy doc.
   const bg = useMemo(() => {
     const b = room?.background;
     if (!b) {
@@ -310,7 +310,7 @@ export default function Live() {
     };
   }, [room]);
 
-  // ── Bg 真实尺寸，用于 camera clamp ──
+  // Natural bg size for camera clamp
   const [bgNaturalSize, setBgNaturalSize] = useState({ w: 1568, h: 896 });
   useEffect(() => {
     const img = new Image();
@@ -319,7 +319,7 @@ export default function Live() {
     img.src = bg.src;
   }, [bg.src]);
 
-  // ── Camera bounds ──
+  // Camera bounds
   const cameraBounds = (() => {
     if (!canvasSize.w || !canvasSize.h) return { min: 0, max: 0 };
     const k = canvasSize.h / CANVAS_REF_H;
@@ -343,7 +343,7 @@ export default function Live() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameraBounds.min, cameraBounds.max]);
 
-  // ── Badge 颜色 ──
+  // Badge color
   const badgeSrc =
     selected === "overall" || selected === "self"
       ? (self?.avatar ?? null)
@@ -368,8 +368,8 @@ export default function Live() {
     img.src = badgeSrc;
   }, [badgeSrc]);
 
-  // ── Canvas 尺寸 ──
-  // dep 包含 self 和 room——两者到齐 JSX 才渲染、sceneRef 才挂载
+  // Canvas size.
+  // Deps include self and room because the JSX (and sceneRef) only mount once both are ready.
   useLayoutEffect(() => {
     if (!sceneRef.current) return;
     const target = sceneRef.current.parentElement;
@@ -391,9 +391,9 @@ export default function Live() {
     return () => obs.disconnect();
   }, [self, room]);
 
-  // ── 座位分配 ──
-  // 首次调 generateSeats；后续 members 增加时调 extendSeats 增量补座
-  // （直接重调 generateSeats 会打乱现有人的坐位）
+  // Seat assignment.
+  // First run calls generateSeats. Later, as members grow, extendSeats adds seats
+  // incrementally so existing seats stay put (regenerate would shuffle everyone).
   useEffect(() => {
     if (!furnitures.length || !self || !room) return;
     const allowedKeys =
@@ -406,16 +406,15 @@ export default function Live() {
       const s = generateSeats(count, pool);
       if (s.length > 0) setSeats(s);
     } else if (count > seats.length) {
-      // 有新成员：增量补座
+      // New member joined: extend
       setSeats(extendSeats(seats, count, pool));
     } else if (count < seats.length) {
-      // 有人离开：重新从头算（这种情况下场景风格不一致没问题）
-      // 不硬要求保持原有人坐原位：room 人心散了重新洗牌也可以
+      // Someone left: regenerate. It's fine if seats shuffle here.
       setSeats(generateSeats(count, pool));
     }
   }, [furnitures, self, room, members.length, seats]);
 
-  // ── 选中变化时聚焦 camera ──
+  // Focus camera on selection change
   useEffect(() => {
     if (!canvasSize.w || !seats) return;
     const k = canvasSize.h / CANVAS_REF_H;
@@ -452,7 +451,7 @@ export default function Live() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, canvasSize.w, canvasSize.h, seats, members]);
 
-  // ── 拖动手势 ──
+  // Drag gesture
   const onScenePointerDown = (e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     dragRef.current = {
@@ -481,8 +480,8 @@ export default function Live() {
     } catch (_) {}
   };
 
-  // ── 派生：场景 layout ──
-  // 把 isOnline 标记带到 member上，场景里渲染时会根据这个标记调透明度
+  // Derived: scene layout.
+  // Tag each member with isOnline so the scene can dim offline avatars.
   const allMembersForScene = useMemo(() => {
     if (!self) return [];
     const onlineSet = new Set(onlineUserIds.map(String));
@@ -497,7 +496,7 @@ export default function Live() {
       ...members.map((m) => ({
         ...m,
         isSelf: false,
-        // m.userId 是 User._id，m._id 是 Profile._id——用 userId 才能对上 presence
+        // m.userId is User._id; m._id is Profile._id. Presence keys by User._id.
         isOnline: onlineSet.has(String(m.userId)),
       })),
     ];
@@ -515,7 +514,7 @@ export default function Live() {
       ? Math.round((CHAR_REF_H * canvasSize.h) / CANVAS_REF_H)
       : CHAR_REF_H;
 
-  // ── 派生：Panel 用 ──
+  // Panel data
   const allMembers = self
     ? [{ ...self, profile: selfProfile, tasks: roomTasks }, ...members]
     : members;
@@ -527,9 +526,9 @@ export default function Live() {
       ? selfInitials
       : (panelMember?.displayName?.slice(0, 2).toUpperCase() ?? "??");
 
-  // ── Task add/remove ──
-  // 成功后 socket 会广播 task_add/task_remove，handleRoomEvent 会 refetchRoom。
-  // 这里再 refetch 一次避免自己错过自己的广播（理论上不会但稳定性优先）。
+  // Task add / remove.
+  // On success, socket broadcasts task_add/task_remove and handleRoomEvent refetches.
+  // We also refetch here for safety (in case self misses its own broadcast).
   const onAddTask = async (task) => {
     const r = await fetch(`${API}/api/rooms/${room._id}/member/tasks`, {
       method: "POST",
@@ -553,9 +552,10 @@ export default function Live() {
     }
   };
 
-  // 更新 task 进度。slider 拖动时 log=false：静默 PATCH，不 refetch（避免 re-render 打断拖动）
-  // 拖动结束时 log=true：PATCH + refetch，同时后端记 history
-  // 后端检测到 100% 时无论如何 emit task_complete
+  // Update task progress.
+  // Slider drag → log=false: silent PATCH, no refetch (avoid re-render mid-drag).
+  // Drag end   → log=true:  PATCH + refetch, and backend logs history.
+  // Backend emits task_complete at 100% regardless.
   const onUpdateTaskProgress = async (taskId, newNum, log = false) => {
     const url = `${API}/api/tasks/${taskId}${log ? "?log=true" : ""}`;
     const r = await fetch(url, {
@@ -565,13 +565,13 @@ export default function Live() {
       body: JSON.stringify({ progressNumerator: newNum }),
     });
     if (r.ok && log) {
-      // 只在拖动结束时 refetch（task_complete 事件也会通过 socket 触发 refetch）
+      // Only refetch on drag end. task_complete will also trigger a refetch via socket.
       const fresh = await refetchRoom();
       setRoom(fresh);
     }
   };
 
-  // Leave room：调后端 DELETE，后端自动处理 owner 转移 / 最后人 → inactive
+  // Leave room. Backend handles owner transfer / last member → inactive.
   const onLeave = async () => {
     const ok = await confirm({
       title: "Leave this room?",
@@ -593,8 +593,8 @@ export default function Live() {
     }
   };
 
-  // ── 错误/loading 态 ──
-  // 房间不存在 / 加载失败 / 不是成员：统一 redirect 到 /join/:uid
+  // Error / loading states.
+  // Room missing / load failed / not a member → redirect to /join/:uid.
   useEffect(() => {
     if (roomError) navigate(`/join/${roomUid}`, { replace: true });
   }, [roomError, roomUid, navigate]);
@@ -620,7 +620,7 @@ export default function Live() {
   const memberCount = room.members?.length ?? 1;
   const onlineCount = onlineUserIds.length;
 
-  // Session 时长显示
+  // Session duration display
   const sessionText = (() => {
     if (!sessionStartAt) return "no session";
     const ms = now - new Date(sessionStartAt).getTime();
@@ -759,7 +759,7 @@ export default function Live() {
               onClick={onLeave}
               title="Leave room"
             >
-              {/* 像素风 logout：左边三边门框、朝右箭头穿出。按 20×20 网格画 */}
+              {/* Pixel-style logout: three-sided door frame with arrow exiting right. Drawn on a 20x20 grid. */}
               <svg
                 width="16"
                 height="16"
@@ -866,8 +866,8 @@ export default function Live() {
                     ? "your progress"
                     : "viewing"}
               </div>
-              {/* 踢人按钮: 只在看别的 member 且自己是 owner 时显示。
-                  放在 "viewing" 下面,和 name/mode 归为同一组 meta 信息 */}
+              {/* Kick button: only shown when viewing another member as owner.
+                  Sits under "viewing" so it's grouped with the meta info. */}
               {isAdmin && panelMember && (
                 <button
                   type="button"

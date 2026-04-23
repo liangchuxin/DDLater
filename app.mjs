@@ -40,7 +40,7 @@ app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json({ limit: "10mb" }));
 
-// session middleware as variable，shared by both HTTP and socket
+// Session middleware as a variable so it can be shared by both HTTP and socket.
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -85,19 +85,19 @@ app.get("/api/courses/search", async (req, res) => {
 
 app.get("/api/test", (req, res) => res.json({ message: "ok" }));
 
-// ── Socket.io 集成 ──────────────────────────────────────────────────────────
-// 用 http.createServer 包住 Express app，让 socket.io 能共用同一个端口。
+// Socket.io integration.
+// Wrap Express in http.createServer so socket.io can share the same port.
 const httpServer = createServer(app);
 
 const io = new SocketIOServer(httpServer, {
   cors: corsOptions,
 });
 
-// 让 socket 读同一份 express-session cookie。这样 socket.request.session.userId
-// 和 HTTP 请求里的 req.session.userId 是同一个值。
+// Let socket.io read the same express-session cookie, so socket.request.session.userId
+// matches req.session.userId on HTTP requests.
 io.engine.use(sessionMiddleware);
 
-// 把 io 挂到 app 上，routes 里可以用 req.app.get('io') 拿到并广播事件
+// Expose io on the app so routes can do req.app.get('io') to broadcast.
 app.set("io", io);
 
 io.on("connection", (socket) => {
@@ -107,11 +107,11 @@ io.on("connection", (socket) => {
     return;
   }
 
-  // 记住这个 socket 订阅了哪些 room，断开时都要处理。
-  // 可能一个用户多 tab 开同一 room，每个 tab 一个 socket。
+  // Track which rooms this socket has joined so we clean up on disconnect.
+  // A single user may have multiple tabs open in the same room, each with its own socket.
   socket.data.joinedRooms = new Set();
 
-  // 自动进入个人 channel，用于接收针对本人的通知（比如 join_rejected）
+  // Auto-join a personal channel for notifications targeted at this user (e.g. join_rejected).
   socket.join(`user:${userId}`);
 
   socket.on("join-room", async (roomUid) => {
@@ -135,10 +135,10 @@ io.on("connection", (socket) => {
   });
 });
 
-// ── Presence 管理（in-memory） ─────────────────────────────────────────────
+// Presence tracking (in-memory).
 // roomUid -> Map<userId, socketCount>
-// 同 user 多 tab 连同 room 时计数，只有计数归 0 才算离线。
-// 服务器重启会丢状态，第一个客户端 join-room 时重建。
+// Multiple tabs by the same user bump the count; only count==0 means offline.
+// Server restart loses state; rebuilt as clients reconnect.
 const presenceByRoom = new Map();
 
 function getPresenceMap(roomUid) {
@@ -151,10 +151,10 @@ async function onUserPresent(roomUid, userId, io) {
   const prevCount = map.get(userId) ?? 0;
   map.set(userId, prevCount + 1);
 
-  // 首次上线（这个 user 之前没在线）才做全局操作（开 session）
+  // Only do global work on first online (user wasn't online before).
   if (prevCount === 0) {
     const onlineUsers = [...map.keys()];
-    // 如果是房间里第一个在线的人，开始 session 计时
+    // First online user in the room → start the session timer.
     if (onlineUsers.length === 1) {
       const StudyRoom = mongoose.model("StudyRoom");
       const room = await StudyRoom.findOne({ uid: roomUid });
@@ -168,13 +168,12 @@ async function onUserPresent(roomUid, userId, io) {
     }
   }
 
-  // 无论是首次还是额外 tab，都广播一次 presence 列表 ——
-  // 这样新 tab 能拿到最新状态，旧的 tab 收到会刀重复也不是问题
+  // Broadcast the presence list either way, so new tabs pick up state
+  // (old tabs getting a duplicate is harmless).
   const onlineUsers = [...map.keys()];
   io.to(`room:${roomUid}`).emit("presence", { online: onlineUsers });
 
-  // 对新连上的 socket 独单发一份当前 session 状态（如果现有 session 正在进行，
-  // 新 tab 需要知道 sessionStartAt）。但这里没 socket 引用，改成广播也行
+  // Also (re)emit session-start so a fresh tab learns the current sessionStartAt.
   const StudyRoom2 = mongoose.model("StudyRoom");
   const room2 = await StudyRoom2.findOne({ uid: roomUid }, "sessionStartAt");
   if (room2?.sessionStartAt) {
@@ -191,13 +190,13 @@ async function onUserMaybeAbsent(roomUid, userId, io) {
     map.delete(userId);
   } else {
     map.set(userId, prevCount - 1);
-    return; // 还有其他 tab，不算真离线
+    return; // Other tabs still open; not really offline.
   }
 
   const onlineUsers = [...map.keys()];
   io.to(`room:${roomUid}`).emit("presence", { online: onlineUsers });
 
-  // 所有人都下线了，清 session
+  // Everyone is offline → clear the session.
   if (onlineUsers.length === 0) {
     const StudyRoom = mongoose.model("StudyRoom");
     const room = await StudyRoom.findOne({ uid: roomUid });

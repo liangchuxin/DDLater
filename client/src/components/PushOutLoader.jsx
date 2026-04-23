@@ -1,9 +1,10 @@
 import "../styles/PushOutLoader.css";
 
-// Push-out loader,原作者 jh3y (codepen)。
-// SCSS 里所有数字都是基于 100×100 的 base 写死的,要换尺寸最简单是外层 scale。
-// wrap div 负责 layout 尺寸 (= size prop),内层 .push-out 用 transform: scale 视觉缩放。
-// 颜色: 传 color prop,或在外层用 --push-out-color CSS var 覆盖。
+// Push-out loader by jh3y (codepen).
+// All numbers in the SCSS are hardcoded against a 100x100 base; easiest way to resize
+// is to scale the outer wrapper. The wrap div owns layout size (= size prop); the
+// inner .push-out uses transform: scale for visual scaling.
+// Color: pass the color prop, or override --push-out-color on the outer element.
 export default function PushOutLoader({ color, size = 50 }) {
   const scale = size / 100;
   return (

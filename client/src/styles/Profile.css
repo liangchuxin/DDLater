@@ -80,7 +80,6 @@
   justify-content: start;
 }
 
-/* PixelBox retro 给结构,这里只调颜色和内边距 */
 .profile-stat {
   --pixel-base: var(--green);
   --pixel-highlight: var(--greenl);

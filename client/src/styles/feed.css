@@ -33,7 +33,6 @@ body {
   flex-direction: column;
 }
 
-/* ── LAYOUT ── */
 .App {
   display: flex;
   flex-direction: column;
@@ -44,7 +43,6 @@ body {
   flex: 1;
 }
 
-/* ── HEADER ── */
 .header {
   height: 68px;
   flex-shrink: 0;
@@ -121,7 +119,6 @@ body {
   }
 }
 
-/* ── SIDEBAR ── */
 .sidebar {
   width: 90px;
   flex-shrink: 0;
@@ -134,7 +131,6 @@ body {
   position: sticky;
   top: 68px;
   height: calc(100vh - 68px);
-  /* sticky 创建 stacking context；显式设高 z-index 让 sidebar 整体（含 tooltip）凌驾于 main 内容 */
   z-index: 50;
 }
 .nav-item {
@@ -183,7 +179,6 @@ body {
   flex: 1;
 }
 
-/* ── MAIN ── */
 .main {
   flex: 1;
   overflow-y: auto;
@@ -196,8 +191,6 @@ body {
   padding: 34px 39px 101px;
 }
 
-/* loading 态: loader 跨满 grid 所有列,占个合理高度。
-   放在 grid 容器内部,这样 grid 容器本身到 loaded 的切换不会触发布局重算 */
 .cards-loading {
   grid-column: 1 / -1;
   min-height: 360px;
@@ -206,17 +199,12 @@ body {
   justify-content: center;
 }
 
-/* fill variant: 给 tasks feed 用。占满到视口底部,让 loading 时 Study Rooms section
-   被推出视口,用户进 dashboard 只看见 tasks section + loader。
-   200px = header(68) + main-inner 上 padding(34) + sec-head(~34) + filter-bar(~50) + 缓冲
-   align-items flex-start + padding-top 让 loader 靠上一点,不是入场居中 */
 .cards-loading--fill {
   min-height: calc(100vh - 200px);
   align-items: flex-start;
   padding-top: 120px;
 }
 
-/* ── SECTION HEADER ── */
 .sec-head {
   margin-bottom: 17px;
 }
@@ -229,7 +217,6 @@ body {
   color: var(--muted);
 }
 
-/* ── FILTER BAR ── */
 .filter-bar {
   display: flex;
   align-items: center;
@@ -261,11 +248,6 @@ body {
   color: var(--red);
 }
 
-/* ── TASK GRID ── */
-/* minmax(0, 1fr) 而不是 1fr: 默认 1fr 展开是 minmax(auto, 1fr),会被子元素的
-   min-content 尺寸擑开(比如 canvas 默认 300×150 会让列变宽)。用 minmax(0, 1fr)
-   强制所有列宽度单纯由 1fr 分配,任何 overflow content 被子元素自己的
-   overflow: hidden 裁掉 */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -273,7 +255,6 @@ body {
   margin-bottom: 45px;
 }
 
-/* ── TASK CARD ── */
 .card {
   background: var(--paper);
   position: relative;
@@ -302,7 +283,6 @@ body {
   grid-column: span 2;
 }
 
-/* promo card */
 .card-promo {
   background: var(--greenbg);
   display: flex;
@@ -332,7 +312,6 @@ body {
   letter-spacing: 0.07em;
 }
 
-/* card image area */
 .card-img {
   height: 151px;
   position: relative;
@@ -346,45 +325,19 @@ body {
   justify-content: space-around;
 }
 
-/* card image backgrounds */
-.ci-1 {
-  background: #cfe0cc;
-}
-.ci-2 {
-  background: #dedad0;
-}
-.ci-3 {
-  background: #c5d4e0;
-}
-.ci-4 {
-  background: #ddd0da;
-}
-.ci-5 {
-  background: #ccdacf;
-}
-.ci-6 {
-  background: #dbd8c2;
-}
-.ci-7 {
-  background: #c5d9d9;
-}
-.ci-8 {
-  background: #d8cede;
-}
-.ci-9 {
-  background: #d2dcc8;
-}
-.ci-a {
-  background: #dcd4c0;
-}
-.ci-b {
-  background: #c8d4dc;
-}
-.ci-c {
-  background: #d4ccd8;
-}
+.ci-1 { background: #cfe0cc; }
+.ci-2 { background: #dedad0; }
+.ci-3 { background: #c5d4e0; }
+.ci-4 { background: #ddd0da; }
+.ci-5 { background: #ccdacf; }
+.ci-6 { background: #dbd8c2; }
+.ci-7 { background: #c5d9d9; }
+.ci-8 { background: #d8cede; }
+.ci-9 { background: #d2dcc8; }
+.ci-a { background: #dcd4c0; }
+.ci-b { background: #c8d4dc; }
+.ci-c { background: #d4ccd8; }
 
-/* course tag */
 .img-tag {
   position: absolute;
   top: 13px;
@@ -396,28 +349,12 @@ body {
   font-weight: 500;
   z-index: 2;
 }
-.t-ait {
-  background: rgba(18, 70, 60, 0.82);
-  color: #8aeee0;
-}
-.t-se {
-  background: rgba(82, 14, 14, 0.82);
-  color: #f5b0b0;
-}
-.t-wd {
-  background: rgba(36, 16, 84, 0.82);
-  color: #c5b8f5;
-}
-.t-bd {
-  background: rgba(84, 50, 4, 0.82);
-  color: #f0d888;
-}
-.t-li {
-  background: rgba(82, 14, 50, 0.82);
-  color: #f5b0d5;
-}
+.t-ait { background: rgba(18, 70, 60, 0.82); color: #8aeee0; }
+.t-se  { background: rgba(82, 14, 14, 0.82); color: #f5b0b0; }
+.t-wd  { background: rgba(36, 16, 84, 0.82); color: #c5b8f5; }
+.t-bd  { background: rgba(84, 50, 4, 0.82); color: #f0d888; }
+.t-li  { background: rgba(82, 14, 50, 0.82); color: #f5b0d5; }
 
-/* status dot */
 .img-dot {
   position: absolute;
   top: 14px;
@@ -438,7 +375,6 @@ body {
   background: rgba(130, 130, 110, 0.3);
 }
 
-/* card body */
 .card-body {
   padding: 18px 20px 20px;
 }
@@ -490,15 +426,9 @@ body {
 .prog-fill {
   height: 100%;
 }
-.pf-g {
-  background: var(--green);
-}
-.pf-y {
-  background: var(--amber);
-}
-.pf-r {
-  background: var(--red);
-}
+.pf-g { background: var(--green); }
+.pf-y { background: var(--amber); }
+.pf-r { background: var(--red); }
 .prog-meta {
   display: flex;
   justify-content: space-between;
@@ -511,12 +441,6 @@ body {
   font-family: "DM Mono", monospace;
   font-size: 13px;
 }
-.ddl-u {
-  color: var(--red);
-}
-.ddl-s {
-  color: var(--amber);
-}
-.ddl-o {
-  color: var(--green);
-}
+.ddl-u { color: var(--red); }
+.ddl-s { color: var(--amber); }
+.ddl-o { color: var(--green); }

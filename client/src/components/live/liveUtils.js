@@ -1,4 +1,4 @@
-// 纯工具函数，不持有 state。
+// Pure utility functions; no state.
 
 export function pctClass(pct) {
   if (pct === 100) return "done";
@@ -20,7 +20,7 @@ export function formatDue(d) {
   return `due ${due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
-// 从 img 元素读最主要的颜色，用于 badge 边框/阴影。
+// Read the dominant color from an img element; used for badge border/shadow.
 export function getDominantColor(imgEl) {
   const canvas = document.createElement("canvas");
   canvas.width = 50;
@@ -39,15 +39,15 @@ export function getDominantColor(imgEl) {
   return `rgb(${r},${g},${b})`;
 }
 
-// 随机分配座位。调用一次，结果稳定传给 RoomScene。
-// 规则：self (memberIdx=0) 随机坐桌子左/右；剩余客人一个可能坐桌子另一侧，
-// 其余分配 side 家具。
+// Randomly assign seats. Called once; result stays stable for the scene.
+// Rules: self (memberIdx=0) sits randomly on the left/right desk slot; next
+// member may take the other desk slot; remaining members go to side furniture.
 export function generateSeats(memberCount, furnitures) {
   const desk = furnitures.find((f) => f.key === "desk");
   const pool = [...furnitures.filter((f) => f.key !== "desk")].sort(
     () => Math.random() - 0.5,
   );
-  const adminDeskSlot = Math.random() < 0.5 ? 0 : 1;
+  const selfDeskSlot = Math.random() < 0.5 ? 0 : 1;
   const sides = Math.random() < 0.5 ? ["left", "right"] : ["right", "left"];
   const seats = [];
   if (desk) {
@@ -55,14 +55,14 @@ export function generateSeats(memberCount, furnitures) {
       seats.push({
         memberIdx: 0,
         furniture: desk,
-        slotIndex: adminDeskSlot,
+        slotIndex: selfDeskSlot,
         position: "center",
       });
     if (memberCount > 1)
       seats.push({
         memberIdx: 1,
         furniture: desk,
-        slotIndex: 1 - adminDeskSlot,
+        slotIndex: 1 - selfDeskSlot,
         position: "center",
       });
   }
@@ -83,9 +83,9 @@ export function generateSeats(memberCount, furnitures) {
   return seats;
 }
 
-// 在现有 seats 基础上增量补座位。
-// 已占位的 memberIdx 不动；缺座的 memberIdx 按简单策略补上。
-// 策略：优先填空的桌子坐位 → 然后填侧面家具左/右。如果连 side 床沿/沙发 都满了，晚来的人就不渲染在场景里（床位就这么多，MVP 正常）。
+// Extend existing seats without disturbing occupants.
+// Strategy: fill empty desk slots first, then left/right side furniture.
+// If everything is full, late arrivals aren't placed (capped at 4 seats in MVP).
 export function extendSeats(existingSeats, memberCount, furnitures) {
   const taken = new Set(existingSeats.map((s) => s.memberIdx));
   const occupiedDeskSlots = new Set(
@@ -102,7 +102,7 @@ export function extendSeats(existingSeats, memberCount, furnitures) {
   const seats = [...existingSeats];
   for (let i = 0; i < memberCount; i++) {
     if (taken.has(i)) continue;
-    // 1) 桓子有空位就坐桌子
+    // 1) Take an open desk slot if available
     if (desk) {
       const freeDeskSlot = [0, 1].find((s) => !occupiedDeskSlots.has(s));
       if (freeDeskSlot !== undefined) {
@@ -116,7 +116,7 @@ export function extendSeats(existingSeats, memberCount, furnitures) {
         continue;
       }
     }
-    // 2) 侧位：左边或右边有空就坐对应 side 家具
+    // 2) Left or right side, if available
     const freeSide = ["left", "right"].find((s) => !occupiedSides.has(s));
     if (freeSide && sidePool.length > 0) {
       const furniture = sidePool[Math.floor(Math.random() * sidePool.length)];
@@ -133,8 +133,9 @@ export function extendSeats(existingSeats, memberCount, furnitures) {
   return seats;
 }
 
-// Side slot 中心 x：受 sideInset（离最近垂直边） 和 minFromCenter（离 canvas 中心）
-// 两个约束夹紧，防止窄屏下家具撞桌子。
+// Side slot center x, clamped by sideInset (min distance from canvas edge) and
+// sideMinFromCenter (min distance from canvas center). Prevents side furniture
+// from overlapping the desk on narrow screens.
 export function sideCenterX(position, sideInset, canvasW, sideMinFromCenter) {
   return position === "left"
     ? Math.min(sideInset, canvasW / 2 - sideMinFromCenter)

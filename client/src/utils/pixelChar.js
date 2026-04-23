@@ -86,7 +86,7 @@ export function autoRemoveBackground(grid, tolerance = 40) {
   return ng;
 }
 
-// transparent=true 时跳过棋盘格背景，canvas 背景透明
+// transparent=true skips the checkerboard background for a transparent canvas.
 export function renderStatic(canvas, grid, maxSize = 260, transparent = false) {
   const M = grid.length, N = grid[0]?.length ?? 0;
   if (!M || !N) return;
@@ -128,8 +128,9 @@ export function randomizeAnimConfig(base, jitter = 0.3) {
   };
 }
 
-// transparent=true 时跳过棋盘格背景
-// maxRow: 可选，只渲染 grid[0..maxRow]，超过的行不打。用于家具遮挡身体下半的场景。
+// transparent=true skips the checkerboard background.
+// maxRow: optional, only render grid[0..maxRow]; rows beyond are skipped.
+// Useful when furniture occludes the lower body (e.g. sofa hiding legs).
 export function startAnimation(canvas, grid, cfg, maxSize = 260, transparent = false, maxRow = null) {
   const { cuts, amp, stepFrames, gapAB, gapBC, holdFrames } = cfg;
   const M = grid.length, N = grid[0]?.length ?? 0;

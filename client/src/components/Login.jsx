@@ -31,7 +31,7 @@ export default function Login() {
 
   return (
     <div className="auth-page">
-      {/* 全屏背景图。图放 /client/public/auth/characters.png */}
+      {/* Fullscreen background, file at /client/public/auth/characters.png */}
       <img
         src="/auth/characters.png"
         alt=""
@@ -39,7 +39,7 @@ export default function Login() {
         aria-hidden="true"
       />
 
-      {/* 居中的 PixelBox card */}
+      {/* Centered PixelBox card */}
       <div className="auth-card-wrap">
         <PixelBox variant="retro" className="auth-card">
           <h1 className="auth-title">Welcome back</h1>

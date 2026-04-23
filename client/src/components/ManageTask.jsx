@@ -4,8 +4,8 @@ import SchoolSearch from "./SchoolSearch";
 import CourseSearch from "./CourseSearch";
 import "../styles/ManageTask.css";
 
-// 只有两个选项: public 对应 hideFromClassmates=false，private 对应 true。
-// 后端字段名是历史遗留，面向用户文案走 private。
+// Two options: public maps to hideFromClassmates=false, private to true.
+// Backend field name is legacy; user-facing label is Private.
 const VISIBILITY_OPTIONS = [
   { value: "public", label: "Visible to all" },
   { value: "private", label: "Private" },
@@ -90,7 +90,7 @@ function TaskForm({
 
         <form onSubmit={handleSubmit}>
           <div className="mt-form-layout">
-            {/* ── 左列: 主要字段 ── */}
+            {/* Left column: main fields */}
             <div className="mt-form-col">
               <div className="mt-field">
                 <input

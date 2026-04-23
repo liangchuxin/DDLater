@@ -5,11 +5,11 @@ import "../styles/CreateRoom.css";
 
 const API = import.meta.env.VITE_API_URL;
 
-// 预设背景选项。以后可以换成动态从后端拉 / 上传。
-// 文件放 client/public/room/backgrounds/ 下。
+// Background presets. Could later become dynamic (backend-driven or upload).
+// Image files live under client/public/room/backgrounds/.
 const BG_PRESETS = [
   { key: "bg-ai-wide.png", label: "Bedroom (default)", heightPct: 200, offsetX: 0, offsetY: -360 },
-  // 以后加更多
+  // add more later
 ];
 
 export default function CreateRoom() {

@@ -1,7 +1,3 @@
-/* ── Rooms.css — scoped to .rooms-page ── */
-/* CSS variables are inherited from the global feed.css / index.css */
-
-/* 4-column grid */
 .rooms-page .rooms-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -9,7 +5,6 @@
   margin-bottom: 8px;
 }
 
-/* ── base room card ── */
 .rooms-page .rcard {
   background: var(--paper);
   position: relative;
@@ -25,12 +20,10 @@
 }
 .rooms-page .rcard.live { background: #f9fff8; }
 
-/* width variants */
 .rooms-page .rcard.w2 { grid-column: span 2; }
 .rooms-page .rcard.w3 { grid-column: span 3; }
 .rooms-page .rcard.w4 { grid-column: span 4; }
 
-/* ── header bar ── */
 .rooms-page .rcard-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 16px 8px;
@@ -58,8 +51,6 @@
   animation: blink 2s ease-in-out infinite;
 }
 
-/* stage: 固定背景图尺寸 (不随 card 宽度变),小 card = 小窗口看局部
-   1120px 是按 w4 一行宽度硬编码的,跟 w4 之前 cover 的视觉一致 */
 .rooms-page .rcard-stage {
   position: relative;
   display: flex; align-items: flex-end;
@@ -74,7 +65,6 @@
 .rooms-page .rcard.w3 .rcard-stage { height: 170px; padding: 0 24px 14px; }
 .rooms-page .rcard.w4 .rcard-stage { height: 220px; padding: 0 40px 16px; }
 
-/* member 站 — 名字白色 + shadow (背景是深色 canvas) */
 .rooms-page .rfull-member {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
@@ -85,7 +75,6 @@
   max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
-/* ── card body ── */
 .rooms-page .rcard-body {
   padding: 13px 16px 16px;
   border-top: 1.5px solid var(--bg2);
@@ -128,7 +117,6 @@
 .rooms-page .rcard-footer .ddl-s { color: var(--amber); }
 .rooms-page .rcard-footer .ddl-o { color: var(--green); }
 
-/* ── create room ── */
 .rooms-page .rcard-create {
   background: var(--bg2);
   display: flex; flex-direction: column; align-items: center;

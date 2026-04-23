@@ -5,7 +5,7 @@ import PushOutLoader from "./PushOutLoader";
 
 const API = import.meta.env.VITE_API_URL;
 
-// 宽度模板: 第1行 w4 / 第2行 w3+w1 / 第3行 w2+w2,循环
+// Width template: row 1 w4 / row 2 w3+w1 / row 3 w2+w2, looping.
 const WIDTHS = [4, 3, 1, 2, 2];
 
 const ROOM_FILTERS = ["All Rooms", "My School", "My Course"];
@@ -40,7 +40,7 @@ export default function StudyRoomsSection({
     };
   }, []);
 
-  // create card 放在 rooms 末尾,占下一格的 width,保持模板规律
+  // Create card sits at the end, takes the next width slot to keep the template rhythm.
   const createWClass = `w${WIDTHS[rooms.length % WIDTHS.length]}`;
 
   return (

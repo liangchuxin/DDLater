@@ -3,17 +3,18 @@ import { useNavigate } from "react-router-dom";
 import logoLight from "../assets/logo.svg";
 import "../styles/GateLayout.css";
 
-// 随机 bg 池。mount 时选一次,整个 session 不变。
+// Random bg pool. Picked once on mount, stays for the session.
 const BG_OPTIONS = [
   "/backgrounds/bg1.gif",
   "/backgrounds/bg2.gif",
   "/backgrounds/bg3.gif",
 ];
 
-// GateLayout: 给 /join /join/:roomId 等"门禁态"页面用的极简 layout。
-// 无 sidebar,透明 header,底下一张 bg 图贴底。
-// bgSrc 可由 route 指定;未传则从 BG_OPTIONS 随机一个
-// ready=false 时整个 layout 不渲染（用于用户即将被 redirect 走的场景，避免 gate 闪一下）
+// GateLayout: minimal layout for gate-like pages (/join, /join/:roomId, etc).
+// No sidebar, transparent header, bg image pinned to bottom.
+// bgSrc can be set per-route; otherwise randomly picked from BG_OPTIONS.
+// ready=false renders nothing, useful when the user is about to be redirected
+// and we want to avoid a brief flash of the gate.
 export default function GateLayout({ children, bgSrc, ready = true }) {
   const navigate = useNavigate();
   const [now, setNow] = useState(new Date());

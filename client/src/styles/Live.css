@@ -1,7 +1,3 @@
-/* ── Live.css — scoped to .live-page ── */
-/* inherits --bg / --paper / --ink / --green from feed.css */
-
-/* room 数据还没到时显示的 loader 占位。居中偏上,loader 下面配一行文字 */
 .live-loading {
   flex: 1;
   height: calc(100vh - 68px);
@@ -10,7 +6,7 @@
   align-items: center;
   justify-content: center;
   gap: 22px;
-  padding-bottom: 18vh; /* 加 padding 让重心上移,不是完全居中 */
+  padding-bottom: 18vh;
   background: var(--bg);
 }
 
@@ -30,8 +26,6 @@
   background: var(--bg);
 }
 
-/* ── center main column ── */
-/* 宽度 ≈ canvas max-width + 左右 padding；panel 关闭时放开 cap，transition 和 panel 同步 */
 .live-main {
   width: 100%;
   max-width: calc((100vh - 352px) * 20 / 9 + 68px);
@@ -47,8 +41,6 @@
   max-width: 100vw;
 }
 
-/* ── header row ── */
-/* 宽度与 canvas / members-row 保持一致；margin-bottom 和 .live-stage 的 gap 对齐 */
 .live-header {
   display: flex;
   align-items: center;
@@ -71,7 +63,6 @@
   font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--ink);
-  /* -webkit-font-smoothing: none; */
   font-smooth: never;
 }
 
@@ -101,7 +92,6 @@
   flex-shrink: 0;
 }
 
-/* ── stage wrapper: canvas 和 members-row 紧跟在 header 下方，不垂直居中 ── */
 .live-stage {
   display: flex;
   flex-direction: column;
@@ -109,8 +99,6 @@
   min-height: 0;
 }
 
-/* ── canvas stage ── */
-/* aspect 在 4/3 (窄屏) 和 20/9 (宽屏) 之间浮动，height 不超 100vh - 352px */
 .live-canvas {
   width: 100%;
   aspect-ratio: 4 / 3;
@@ -129,7 +117,6 @@
   --pixel-shadow: rgba(0, 0, 0, 0.1);
 }
 
-/* subtle ground shadow at the bottom of the stage */
 .live-canvas::after {
   content: "";
   position: absolute;
@@ -141,9 +128,6 @@
   pointer-events: none;
 }
 
-/* ── member strip below the canvas ── */
-/* outer row: scrollable cards (flex 1) + fixed overall on the right */
-/* 宽度与 canvas 保持一致 */
 .live-members-row {
   display: flex;
   align-items: flex-start;
@@ -267,9 +251,8 @@
 }
 
 .live-member-overall-btn {
-  /* margin 匹配 .live-members 的 padding，让 overall 的可视边缘和 cards 对齐 */
   margin: 10px 0 14px;
-  min-height: 52px; /* 匹配 card 自然高度：28px avatar + 12px*2 padding */
+  min-height: 52px;
   padding: 0 24px;
   display: inline-flex;
   align-items: center;
@@ -308,7 +291,6 @@
   --pixel-shadow: rgba(45, 138, 62, 0.2);
 }
 
-/* Leave room button: 红框红图标、白底 */
 .live-member-leave-btn {
   margin: 10px 0 14px;
   min-height: 52px;
@@ -334,7 +316,6 @@
   --pixel-base: #fff5f5;
 }
 
-/* ── right panel ── */
 .live-panel {
   width: 280px;
   max-height: calc(100vh - 194px);
@@ -353,7 +334,6 @@
   --pixel-shadow: rgba(0, 0, 0, 0.1);
 }
 
-/* CL identity badge hanging at the top-left corner of the panel */
 .live-panel-badge {
   position: absolute;
   top: -16px;
@@ -393,7 +373,6 @@
   pointer-events: none;
 }
 
-/* close button at panel top-right */
 .live-panel-close {
   position: absolute;
   top: 14px;
@@ -473,7 +452,6 @@
   gap: 28px;
 }
 
-/* ── task section ── */
 .live-task-section-title {
   font-family: "DM Mono", monospace;
   font-size: 10px;
@@ -582,7 +560,6 @@
   color: var(--red);
 }
 
-/* draggable slider (self panel) */
 .live-task-slider {
   width: 100%;
   -webkit-appearance: none;
@@ -621,7 +598,6 @@
   border: none;
 }
 
-/* read-only bar (other members / overall) */
 .live-task-bar {
   height: 3px;
   background: var(--bg2);
@@ -640,8 +616,6 @@
   background: var(--red);
 }
 
-/* Owner 踢人按钮,放 panel-header 的 viewing 下面。无框小红字,跟 panel-mode 的
-   10px mono uppercase 保持一致的 type scale,视觉上不抢戏。hover 下划线加强 */
 .live-panel-kick {
   display: inline-block;
   margin-top: 6px;
@@ -662,7 +636,6 @@
   text-decoration: underline;
 }
 
-/* add task button */
 .live-add-task-btn {
   display: flex;
   align-items: center;
@@ -684,7 +657,6 @@
   color: var(--green);
 }
 
-/* ── add-task modal ── */
 .live-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -816,30 +788,26 @@
   opacity: 0.5;
 }
 
-/* ── task section：最小高度支撑 panel 顶部 ── */
 .live-task-section {
-  flex-shrink: 0; /* 任务内容扩展时不被历史侵占，挽古历史 */
+  flex-shrink: 0;
   min-height: 220px;
 }
 
-/* ── history section：flex 擑满剩余空间，使 history list 能到达 panel 底 ── */
 .live-history-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* flex child 默认不收缩，设为 0 才能让内部滚动正常 */
+  min-height: 0;
 }
 
-/* ── history list ── */
 .live-history-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* 隐藏 scrollbar 但保留滚动能力 */
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
 }
 .live-history-list::-webkit-scrollbar {
-  display: none; /* Webkit */
+  display: none;
 }
 
 .live-history-item {
@@ -871,7 +839,6 @@
   letter-spacing: 0.03em;
 }
 
-/* history join_request actions (admin only) */
 .live-history-actions {
   display: flex;
   gap: 6px;

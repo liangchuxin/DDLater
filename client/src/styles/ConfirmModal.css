@@ -1,7 +1,3 @@
-/* ConfirmModal — 通用确认弹窗,替代 window.confirm()。
-   风格跟 CreateRoom / JoinConfirm 的 PixelBox card 对齐:米底 #f5f4ee、标题 22px、按钮 13px。 */
-
-/* 轻微半透 backdrop,点空白区等于 cancel */
 .confirm-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -13,7 +9,6 @@
   padding: 24px;
 }
 
-/* 米色 card,跟 join modal 一致 */
 .confirm-modal-card {
   width: 100%;
   max-width: 420px;
@@ -47,7 +42,6 @@
   gap: 10px;
 }
 
-/* 按钮基础:跟 create-room-btn 对齐 (13px mono, padding 10 20, 1.5px 深边框) */
 .confirm-modal-btn {
   font-family: "DM Mono", monospace;
   font-size: 13px;
@@ -68,7 +62,6 @@
   background: var(--bg2, #f2f0ea);
 }
 
-/* primary: 绿底白字(非破坏性 confirm 默认) */
 .confirm-modal-btn.primary {
   background: var(--green, #2d8a3e);
   color: #fff;
@@ -78,8 +71,6 @@
   background: #246b32;
 }
 
-/* danger: 米底红边红字 —— 跟 card 同色系,红色仅出现在边框和文字上,
-   整体轻柔但警示意图明确。hover 时用半透红色微微填充 */
 .confirm-modal-btn.danger {
   background: #f5f4ee;
   color: var(--red, #b83030);

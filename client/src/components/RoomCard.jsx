@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { renderStatic } from "../utils/pixelChar";
 import "../styles/Rooms.css";
 
-// ── Static avatar 渲染 ─────────────────────────────────────
-// cellSize 按 wClass 固定,保证同一张 card 里的所有成员像素尺寸一致。
-// grid 行数不同 高度会变,但宽度 (26 列 * cellSize) 和像素密度一致。
+// Static avatar renderer.
+// cellSize is fixed per wClass so all members in one card share the same pixel density.
+// Grid row count varies (height differs), but width (26 cols * cellSize) stays constant.
 function StageAvatar({ grid, cellSize = 3 }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -24,7 +24,7 @@ function StageAvatar({ grid, cellSize = 3 }) {
   );
 }
 
-// ── course 代码格式化 (跟 Dashboard 保持一致) ──────────────
+// Course code formatting (kept consistent with Dashboard).
 const DEPT_ALIASES = { CSCI: "CS", COMP: "CS" };
 const COURSE_TAG_OPTIONS = ["rhc-ait", "rhc-se", "rhc-bd", "rhc-wd"];
 
@@ -44,18 +44,18 @@ function hashString(s) {
   return Math.abs(h);
 }
 
-// ── Room stats 聚合 ───────────────────────────────────────
+// Aggregate room stats.
 function computeRoomStats(room) {
   const members = room.members ?? [];
   const allTasks = members.flatMap((m) => m.tasks ?? []);
 
-  // 完成 / 总
+  // Completed / total
   const completedCount = allTasks.filter(
     (t) => t.progressDenominator > 0 && t.progressNumerator >= t.progressDenominator,
   ).length;
   const totalCount = allTasks.length;
 
-  // collective 百分比 = 所有 task 的 num 总和 / den 总和
+  // Collective percent = sum(num) / sum(den) across all tasks
   let totalN = 0, totalD = 0;
   allTasks.forEach((t) => {
     totalN += t.progressNumerator ?? 0;
@@ -63,7 +63,7 @@ function computeRoomStats(room) {
   });
   const collectivePercent = totalD > 0 ? Math.round((totalN / totalD) * 100) : 0;
 
-  // 最早 dueDate
+  // Earliest dueDate
   const dueDates = allTasks
     .map((t) => t.dueDate)
     .filter(Boolean)
@@ -91,7 +91,7 @@ function computeRoomStats(room) {
     }
   }
 
-  // session 时长
+  // Session duration
   let sessionText = null;
   if (room.sessionStartAt) {
     const diff = Date.now() - new Date(room.sessionStartAt).getTime();
@@ -103,7 +103,7 @@ function computeRoomStats(room) {
     }
   }
 
-  // 最常见 course
+  // Most common course
   const courseCounts = {};
   allTasks.forEach((t) => {
     const code = t.course?.courseCode;
@@ -114,7 +114,7 @@ function computeRoomStats(room) {
     if (count > maxC) { maxC = count; topCourse = c; }
   });
 
-  // progress 条颜色
+  // Progress bar color
   let progClass = "urgent";
   if (collectivePercent >= 80) progClass = "";
   else if (collectivePercent >= 40) progClass = "warn";
@@ -134,8 +134,8 @@ function computeRoomStats(room) {
   };
 }
 
-// ── stage config ──────────────────────────────────────────
-// cellSize = 每个像素点的 px 大小。同一 wClass 下所有成员用相同 cellSize,像素密度一致。
+// Stage config.
+// cellSize = pixel size per dot. Within a wClass, all members share the same cellSize.
 const STAGE_CONFIG = {
   w1: { cellSize: 2, maxMembers: 2 },
   w2: { cellSize: 3, maxMembers: 3 },
@@ -143,7 +143,7 @@ const STAGE_CONFIG = {
   w4: { cellSize: 4, maxMembers: 5 },
 };
 
-// Canvas 参考尺寸,跟 Live 场景的 roomConfig 保持一致
+// Canvas reference dimensions, matching Live scene roomConfig.
 const CANVAS_REF_W = 1435;
 const CANVAS_REF_H = 722;
 
@@ -153,8 +153,8 @@ function roomBgUrl(room) {
   return `/room/backgrounds/${key}`;
 }
 
-// background-position 百分比: 0% = 图顶对齐 card 顶, 100% = 图底对齐 card 底
-// offsetY 默认 -360 (约 CANVAS_REF_H/2) -> yPct 接近 100% -> 图贴底显示
+// background-position percentage: 0% = image top aligned with card top, 100% = image bottom at card bottom.
+// offsetY default -360 (~CANVAS_REF_H/2) makes yPct near 100% so the image sits at the bottom.
 function roomBgPosition(room) {
   const offsetX = room.background?.offsetX ?? 0;
   const offsetY = room.background?.offsetY ?? -360;
@@ -163,7 +163,7 @@ function roomBgPosition(room) {
   return `${xPct}% ${yPct}%`;
 }
 
-// Group icon (跟之前一样,body 里 title-row 要用)
+// Group icon used in the body title-row.
 function RoomIcon() {
   return (
     <svg

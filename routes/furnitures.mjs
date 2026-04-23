@@ -4,22 +4,22 @@ import mongoose from 'mongoose';
 const router = express.Router();
 const Furniture = mongoose.model('Furniture');
 
-// 所有 layout 数值都是 px @ CANVAS_REF (1435×722)，前端按 k = canvasH/722 缩放
+// All layout values are in px at CANVAS_REF (1435x722); frontend scales by k = canvasH/722.
 const SEED = [
   {
     key: 'desk',
     name: 'Study Desk',
     capacity: 2,
     layers: 1,
-    zSlot: 'char-front',                          // 桌子图遮住人
+    zSlot: 'char-front',                          // desk image covers the character
     imageKeys: ['desk.png'],
     isDefault: true,
     layout: {
-      imgBottom: -91,                             // 桌子图 bottom 相对 canvas 底
-      imgWidth: 328,                              // 桌子图宽
-      charHalfGap: 90,                            // 两人中心间距的一半
-      charBottom: 40,                             // 两人 bottom 相对 canvas 底
-      charWidth: 161,                             // 每人宽
+      imgBottom: -91,                             // desk image bottom relative to canvas bottom
+      imgWidth: 328,                              // desk image width
+      charHalfGap: 90,                            // half distance between the two seat centers
+      charBottom: 40,                             // character bottom relative to canvas bottom
+      charWidth: 161,                             // width per character
     },
   },
   {
@@ -27,7 +27,7 @@ const SEED = [
     name: 'Loft Bed',
     capacity: 1,
     layers: 2,
-    zSlot: 'char-middle',                         // 床底 → 人 → 床上（夹在中间）
+    zSlot: 'char-middle',                         // bed-bottom -> character -> bed-top (sandwiched)
     imageKeys: ['bed_bottom.png', 'bed_top.png'],
     isDefault: false,
     layout: {
@@ -37,8 +37,8 @@ const SEED = [
       charWidth: 165,
       charOffsetX: 50,
       charRotation: -90,
-      bottom: -40,                                // 容器 bottom 相对 canvas 底
-      sideInset: 360,                             // 容器中心距最近 canvas 边
+      bottom: -40,                                // container bottom relative to canvas bottom
+      sideInset: 360,                             // container center distance from nearest canvas edge
     },
   },
   {
@@ -46,7 +46,7 @@ const SEED = [
     name: 'Bean Bag',
     capacity: 1,
     layers: 1,
-    zSlot: 'char-back',                           // 懒人沙发在人后
+    zSlot: 'char-back',                           // bean bag drawn behind the character
     imageKeys: ['bean_bag.png'],
     isDefault: false,
     layout: {
@@ -70,15 +70,15 @@ const SEED = [
     layout: {
       sofaWidth: 220,
       sofaHeight: 160,
-      charTopInSofa: 140,                         // 人（裁腿后）底部在沙发顶下方多少
-      charClipRows: 3,                            // pixelChar 从底部砍掉几行（腿）
+      charTopInSofa: 140,                         // how far below the sofa top the (clipped) character's bottom sits
+      charClipRows: 3,                            // pixelChar clips this many rows from the bottom (legs)
       sofaBottom: 0,
       sideInset: 260,
     },
   },
 ];
 
-// GET /api/furnitures — 返回所有家具定义，首次访问自动 seed
+// GET /api/furnitures — return all furniture definitions; seeds on first access.
 router.get('/', async (req, res) => {
   let furnitures = await Furniture.find();
   if (furnitures.length === 0) {
@@ -87,7 +87,7 @@ router.get('/', async (req, res) => {
   return res.json(furnitures);
 });
 
-// POST /api/furnitures/_reseed — DEV ONLY: 清空 + 重新 seed。改 schema 或 SEED 后用。
+// POST /api/furnitures/_reseed — DEV ONLY: wipe + reseed. Use after schema or SEED changes.
 router.post('/_reseed', async (req, res) => {
   if (process.env.NODE_ENV === 'production') {
     return res.status(403).json({ error: 'reseed disabled in production' });

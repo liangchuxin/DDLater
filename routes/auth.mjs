@@ -36,7 +36,7 @@ router.post("/register", async (req, res) => {
   const profile = new Profile({ user: user._id, displayName, uid });
   await profile.save();
 
-  // 给新用户创建一份默认 avatar 拷贝,并设为 activeAvatar
+  // Create a default avatar copy for the new user and set it as activeAvatar.
   try {
     const defaultData = loadDefaultAvatarData();
     const avatar = await Avatar.create({
@@ -50,7 +50,6 @@ router.post("/register", async (req, res) => {
     profile.activeAvatar = avatar._id;
     await profile.save();
   } catch (err) {
-    // default-avatar-source.json 没放就跳过,不阻断注册
     console.warn("[register] failed to create default avatar:", err.message);
   }
 
@@ -69,9 +68,13 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Incorrect password." });
   }
   req.session.userId = existing._id;
-  // 读 profile 拿 displayName
+  // Pull profile for displayName
   const profile = await Profile.findOne({ user: existing._id });
-  return res.json({ _id: existing._id, displayName: profile?.displayName ?? '', uid: profile?.uid ?? '' });
+  return res.json({
+    _id: existing._id,
+    displayName: profile?.displayName ?? "",
+    uid: profile?.uid ?? "",
+  });
 });
 
 router.get("/me", async (req, res) => {
@@ -82,7 +85,12 @@ router.get("/me", async (req, res) => {
   if (!profile) {
     return res.status(404).json({ error: "Profile not found." });
   }
-  return res.json({ _id: req.session.userId, displayName: profile.displayName, uid: profile.uid, avatar: profile.avatar ?? null });
+  return res.json({
+    _id: req.session.userId,
+    displayName: profile.displayName,
+    uid: profile.uid,
+    avatar: profile.avatar ?? null,
+  });
 });
 
 router.post("/logout", (req, res) => {
@@ -90,7 +98,7 @@ router.post("/logout", (req, res) => {
   return res.json({ message: "Logged out." });
 });
 
-// PATCH /api/auth/email - 修改邮箱
+// PATCH /api/auth/email - change email
 router.patch("/email", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not logged in." });
@@ -104,7 +112,7 @@ router.patch("/email", async (req, res) => {
   return res.json({ message: "Email updated." });
 });
 
-// PATCH /api/auth/password - 修改密码
+// PATCH /api/auth/password - change password
 router.patch("/password", async (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: "Not logged in." });
@@ -121,5 +129,3 @@ router.patch("/password", async (req, res) => {
 });
 
 export default router;
-
-// router.post("/login", async (req, res) => {});

@@ -7,9 +7,9 @@ import "../styles/CreateRoom.css";
 
 const API = import.meta.env.VITE_API_URL;
 
-// JoinConfirm: /join/:roomId 的 gate 页。
-// fetch 一次 room → 根据 isMember / isPending / active / 不存在 走不同分支。
-// back 默认按 ?from=rooms 回 /rooms，其他回 /；full 态下强制回 /rooms。
+// Gate page for /join/:roomId.
+// Fetches room once, then branches on isMember / isPending / active / not found.
+// Back defaults to ?from=rooms ? /rooms : /; full state forces /rooms.
 export default function JoinConfirm() {
   const navigate = useNavigate();
   const { roomId } = useParams();
@@ -21,7 +21,7 @@ export default function JoinConfirm() {
   const [status, setStatus] = useState("loading"); // loading | idle | waiting | checking | not-found | inactive | rejected | error
   const [message, setMessage] = useState(null);
 
-  // socket 只在 waiting 态订阅;member_joined 事件的 actor 是自己时跳 live
+  // Subscribe to socket only in waiting state; when member_joined's actor is us, go to live
   useRoomSocket(status === "waiting" ? roomId : null, (event) => {
     if (!myId) return;
     if (
@@ -32,8 +32,8 @@ export default function JoinConfirm() {
     }
   });
 
-  // 订阅个人通知：被 reject 时切到 rejected 态
-  // 只在 waiting 态订阅，避免别的页面也反应历史事件
+  // Personal notification: switch to rejected state when rejected.
+  // Only subscribed while waiting so other pages don't react to stale events.
   useSocketEvent(
     "join-rejected",
     (data) => {
@@ -110,7 +110,7 @@ export default function JoinConfirm() {
     }
   };
 
-  // loading 态不渲染任何东西——避免 GateLayout 的 bg/header 在 redirect 前闪一下
+  // Render nothing in loading state so GateLayout's bg/header doesn't flash before redirect
   if (status === "loading") return null;
 
   if (status === "not-found" || status === "error") {

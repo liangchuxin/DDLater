@@ -67,14 +67,14 @@ export default function Profile() {
       </main>
     );
 
-  // 头像首字母 fallback
+  // Initials fallback for avatar
   const initials = (profile.displayName || currentUser?.username || "?")
     .split(" ")
     .map((w) => w[0].toUpperCase())
     .slice(0, 2)
     .join("");
 
-  // 学校 + 毕业年份
+  // School + graduation year
   const schoolLine = [
     profile.school ? profile.school.replace("University", "Univ.") : null,
     profile.graduationYear ? `Spring ${profile.graduationYear}` : null,
@@ -88,7 +88,7 @@ export default function Profile() {
   return (
     <main className="main">
       <div className="main-inner profile-page">
-        {/* 头像区域 */}
+        {/* Avatar area */}
         <div className="profile-hero">
           <div className="profile-avatar">
             {profile.avatar ? (

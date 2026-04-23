@@ -5,7 +5,7 @@ import {
   DEFAULT_ANIM_CONFIG,
 } from "../../utils/pixelChar";
 
-// clipBottomRows > 0 时,pixelChar 内部从底部砍掉对应行数(比如沙发藏腿)
+// When clipBottomRows > 0, pixelChar cuts that many rows off the bottom (e.g. hiding legs behind a sofa).
 export default function PlayerAvatar({
   avatarGrid,
   avatarCuts,

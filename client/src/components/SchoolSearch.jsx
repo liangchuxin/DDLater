@@ -4,7 +4,7 @@ export default function SchoolSearch({ value, onChange, onConfirmChange }) {
   const [query, setQuery] = useState(value || "");
   const [results, setResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [confirmed, setConfirmed] = useState(!!value); // 初始有值视为已确认
+  const [confirmed, setConfirmed] = useState(!!value); // initial value treated as confirmed
   const debounceRef = useRef(null);
 
   useEffect(() => {

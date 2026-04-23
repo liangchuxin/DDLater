@@ -1,4 +1,3 @@
-// scripts/seed-default-avatars.mjs
 // 一次性(可多次跑)脚本: 保证每个 profile 都有一个 isDefault: true 的 avatar。
 //
 // 逻辑:
@@ -26,27 +25,35 @@ async function main() {
   console.log("已连接");
 
   const defaultData = loadDefaultAvatarData();
-  console.log(`默认 avatar 数据已加载 (grid ${defaultData.avatarGrid.length} 行)\n`);
+  console.log(
+    `默认 avatar 数据已加载 (grid ${defaultData.avatarGrid.length} 行)\n`,
+  );
 
   const profiles = await Profile.find({});
   console.log(`总共 ${profiles.length} 个 profile\n`);
 
-  let skipped = 0;       // 已经有 isDefault avatar, 什么都没做
-  let marked = 0;        // 旧的 "Default Character" 条目被打上 isDefault 标记
-  let created = 0;       // 新建了 default avatar
-  let activeSet = 0;     // 顺便把 activeAvatar 从 null set 成 default
+  let skipped = 0; // 已经有 isDefault avatar, 什么都没做
+  let marked = 0; // 旧的 "Default Character" 条目被打上 isDefault 标记
+  let created = 0; // 新建了 default avatar
+  let activeSet = 0; // 顺便把 activeAvatar 从 null set 成 default
 
   for (const profile of profiles) {
     const label = profile.displayName ?? profile.uid ?? profile._id;
 
     // 1. 已有 isDefault: true
-    let defaultAvatar = await Avatar.findOne({ user: profile.user, isDefault: true });
+    let defaultAvatar = await Avatar.findOne({
+      user: profile.user,
+      isDefault: true,
+    });
     if (defaultAvatar) {
       skipped++;
       console.log(`  · ${label}: 已有 default, 跳过`);
     } else {
       // 2. 有老的 "Default Character" 没打标记
-      const legacy = await Avatar.findOne({ user: profile.user, name: "Default Character" });
+      const legacy = await Avatar.findOne({
+        user: profile.user,
+        name: "Default Character",
+      });
       if (legacy) {
         legacy.isDefault = true;
         await legacy.save();
@@ -77,7 +84,7 @@ async function main() {
   }
 
   console.log(
-    `\n完成: 跳过 ${skipped}, 打标记 ${marked}, 新建 ${created}, 顺便 set activeAvatar ${activeSet}`
+    `\n完成: 跳过 ${skipped}, 打标记 ${marked}, 新建 ${created}, 顺便 set activeAvatar ${activeSet}`,
   );
   await mongoose.disconnect();
 }

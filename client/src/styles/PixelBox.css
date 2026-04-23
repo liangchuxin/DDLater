@@ -1,12 +1,7 @@
-/* ── base ── */
-
 .pixel-box {
   position: relative;
   --pixel-border-color: var(--ink);
 }
-
-/* ── plain variant: 4 corner dots ── */
-/* Consumer provides the main box-shadow on the element itself. */
 
 .pixel-corner {
   position: absolute;
@@ -21,36 +16,22 @@
 .pixel-corner-bl { bottom: -5px; left: -5px; }
 .pixel-corner-br { bottom: -5px; right: -5px; }
 
-/* ── retro variant: codepen-style layered frame + corner ears ── */
-/* Consumer sets four colour variables and a matching background:
-     --pixel-base          (same colour as the element's background)
-     --pixel-border-color  (darker edge)
-     --pixel-highlight     (lighter bottom reflection — used on bottom strip and bottom ears)
-     --pixel-shadow        (hard drop-shadow colour)
-   The geometry is hard-coded to 3px pixel units. Leave some room around the box
-   (at least ~10px on every side) because this extends quite far out. */
-
 .pixel-box-retro {
   --pixel-base: var(--paper);
   --pixel-highlight: #eff0ea;
   --pixel-shadow: rgba(0, 0, 0, 0.1);
   box-shadow:
-    /* inner layer: 3px extension (bg on 3 sides, highlight on bottom) */
     0 3px 0 var(--pixel-highlight),
     0 -3px 0 var(--pixel-base),
     3px 0 0 var(--pixel-base),
     -3px 0 0 var(--pixel-base),
-    /* middle layer: 3px border ring around the 3px extension */
     0 -6px 0 var(--pixel-border-color),
     0 6px 0 var(--pixel-border-color),
     6px 0 0 var(--pixel-border-color),
     -6px 0 0 var(--pixel-border-color),
-    /* outer layer: 3px hard drop shadow (right + bottom only) */
     9px 0 0 var(--pixel-shadow),
     0 9px 0 var(--pixel-shadow);
 }
-
-/* corner ears — top (two small border-coloured squares at the outer top corners) */
 
 .pixel-pt {
   position: absolute;
@@ -71,9 +52,6 @@
 }
 .pixel-pt::before { left: 3px; }
 .pixel-pt::after  { right: 3px; }
-
-/* corner ears — bottom (highlight-coloured face, with border + shadow on their
-   own sides so the drop-shadow wraps around the bottom corners) */
 
 .pixel-pb {
   position: absolute;

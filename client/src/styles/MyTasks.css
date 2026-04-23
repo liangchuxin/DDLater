@@ -175,7 +175,6 @@
   color: var(--ink);
 }
 
-/* complete 버튼 */
 .mt-card-complete {
   display: inline-flex;
   align-items: center;
@@ -220,7 +219,6 @@
   color: var(--green);
 }
 
-/* date badge */
 .mt-card-date-badge {
   display: inline-flex;
   align-items: center;
@@ -234,7 +232,6 @@
   margin-left: 10px;
 }
 
-/* ── urgent card ── */
 @keyframes rainbow-shift {
   0% {
     background-position: 0% 50%;
@@ -288,7 +285,6 @@
   transform: none;
 }
 
-/* ddlater 树苗 */
 .mt-card-urgent::before {
   content: "";
   position: absolute;

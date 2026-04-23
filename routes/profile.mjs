@@ -7,12 +7,12 @@ const Task = mongoose.model("Task");
 const RoomEvent = mongoose.model("RoomEvent");
 const StudyRoom = mongoose.model("StudyRoom");
 
-// 计算 profile 的 stats + courses + ownedRooms,全从现有数据 derive:
-// - taskCount: Task 表里用户的 task 总数
-// - roomCount: 被 approve 加入 (member_joined) + 自己创建 (StudyRoom.owner)
-// - daysOnDDLater: profile.createdAt 到今天的天数 (老 profile 没 createdAt 就兜底 1)
-// - courses: 用户所有 task 涉及的 course code 去重列表
-// - ownedRooms: 用户当前是 owner 且 active 的 room 列表 (_id / uid / name)
+// Compute profile stats + courses + ownedRooms, all derived from existing data:
+// - taskCount: total tasks by this user in the Task collection
+// - roomCount: approvals received (member_joined) + rooms owned (StudyRoom.owner)
+// - daysOnDDLater: days from profile.createdAt to today (fallback 1 for legacy profiles)
+// - courses: unique course codes across all of the user's tasks
+// - ownedRooms: user's currently active rooms they own (_id / uid / name)
 async function buildExtras(userId, profileCreatedAt) {
   const [taskCount, joinedCount, createdCount, userTasks, ownedRooms] = await Promise.all([
     Task.countDocuments({ user: userId }),
@@ -30,7 +30,7 @@ async function buildExtras(userId, profileCreatedAt) {
     : 0;
   const daysOnDDLater = Math.max(1, rawDays);
 
-  // 去重 course code
+  // Dedup course codes
   const courses = [
     ...new Set(
       userTasks
@@ -48,7 +48,7 @@ async function buildExtras(userId, profileCreatedAt) {
   };
 }
 
-// GET /api/profile — 当前登录用户的 profile，带 activeAvatar + stats + courses + ownedRooms
+// GET /api/profile — current user's profile, with activeAvatar + stats + courses + ownedRooms
 router.get("/", async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: "Not logged in." });
   const profile = await Profile.findOne({ user: req.session.userId }).populate("activeAvatar");
@@ -74,7 +74,7 @@ router.patch('/', async (req, res) => {
   return res.json(updated);
 });
 
-// GET /api/profile/:uid — 任意用户 profile，带 activeAvatar + stats + courses + ownedRooms
+// GET /api/profile/:uid — another user's profile, with activeAvatar + stats + courses + ownedRooms
 router.get('/:uid', async (req, res) => {
   const profile = await Profile.findOne({ uid: req.params.uid }).populate("activeAvatar");
   if (!profile) return res.status(404).json({ error: 'User not found.' });

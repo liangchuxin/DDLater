@@ -6,21 +6,20 @@ import "../styles/CreateRoom.css";
 
 const API = import.meta.env.VITE_API_URL;
 
-// 共享 form:只负责 code → 验证 → 回调。
-// 不自己跳转不自己 waiting,所有后续交给父级。
-// onSuccess(roomId, nextStatus) 其中 nextStatus 是 'member' | 'pending'
-// compact=true 时隐藏 title(modal 用)
+// Shared form: validates code, then calls back. Doesn't navigate or wait itself.
+// onSuccess(roomId, nextStatus) where nextStatus is 'member' | 'pending'.
+// compact=true hides the title (used inside the modal).
 export function JoinRoomCodeForm({
   onSuccess,
   onCancel,
   initialCode = "",
   compact = false,
-  autoJoin = true, // true=自动发申请; false=只验证 code,不发申请
+  autoJoin = true, // true = send the request automatically; false = just validate the code
 }) {
   const [code, setCode] = useState(initialCode);
   const [status, setStatus] = useState("idle"); // idle | checking
   const [message, setMessage] = useState(null);
-  // infoMessage 用于非错误提示(比如 "room is full"),样式没有粉色框
+  // infoMessage: non-error hint (e.g. "room is full"); styled without the pink error box
   const [infoMessage, setInfoMessage] = useState(null);
 
   const onSubmit = async (e) => {
@@ -32,7 +31,7 @@ export function JoinRoomCodeForm({
     setInfoMessage(null);
 
     try {
-      // 1. 确认 room 存在
+      // 1. Check the room exists
       const getResp = await fetch(`${API}/api/rooms/${trimmed}`, {
         credentials: "include",
       });
@@ -47,26 +46,26 @@ export function JoinRoomCodeForm({
       }
       const roomData = await getResp.json();
 
-      // 2. 已经是 member:直接交给父级跳 live
+      // 2. Already a member: hand off to parent to go to live
       if (roomData.isMember) {
         onSuccess?.(roomData.uid, "member");
         return;
       }
 
-      // 3. 已经 pending 或 autoJoin=false:跳去 /join/:roomId 让 JoinConfirm 接手
+      // 3. Already pending or autoJoin=false: redirect to /join/:roomId, JoinConfirm takes over
       if (roomData.isPending || !autoJoin) {
         onSuccess?.(roomData.uid, "pending");
         return;
       }
 
-      // 4. 房间满员:不发申请,显示 info(不是 error)
+      // 4. Room full: don't send request, show info (not error)
       if (roomData.isFull) {
         setStatus("idle");
         setInfoMessage("This room is full (max 4 members).");
         return;
       }
 
-      // 5. 发申请
+      // 5. Send the request
       const joinResp = await fetch(`${API}/api/rooms/${roomData.uid}/join`, {
         method: "POST",
         credentials: "include",
@@ -131,7 +130,7 @@ export function JoinRoomCodeForm({
   );
 }
 
-// JoinCodePage:独立页面 `/join` route 用
+// JoinCodePage: standalone page for the `/join` route
 export default function JoinCodePage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -156,7 +155,7 @@ export default function JoinCodePage() {
   );
 }
 
-// JoinRoomModal:挂 navbar,不占 URL
+// JoinRoomModal: mounted from the navbar, doesn't take over the URL
 export function JoinRoomModal({ open, onClose }) {
   const navigate = useNavigate();
   if (!open) return null;

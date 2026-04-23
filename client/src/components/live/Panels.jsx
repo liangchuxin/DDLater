@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import PixelBox from "../PixelBox";
 import { pctClass, formatDue } from "./liveUtils";
 
-// ── Avatar（圆头像，缺图时展示 initials） ──
+// Round avatar; falls back to initials when src is missing.
 export function Avatar({ src, displayName, className = "" }) {
   const initials = displayName?.slice(0, 2).toUpperCase() ?? "?";
   if (src)
@@ -16,7 +16,7 @@ export function Avatar({ src, displayName, className = "" }) {
   return <div className={`live-av ${className}`}>{initials}</div>;
 }
 
-// 相对时间格式化：刃刻前 / X分钟前 / X小时前 / 日期
+// Relative time: "just now" / "Xm ago" / "Xh ago" / date.
 function formatRelative(iso) {
   const d = new Date(iso);
   const diff = Date.now() - d.getTime();
@@ -29,10 +29,11 @@ function formatRelative(iso) {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-// 根据 event type 返回渲染的元素 & 是否显示 approve/reject 按钮
-// showApproveButton 只标记 "这个 event type 有权显示按钮",是否真的显示
-// 还要看当前 actor 是否在 pendingMembers 里。以前用 ev.resolvedAt 判断
-// 容易与 DB 不同步(resolvedAt 是在后端 updateMany 改的,不走 broadcast)。
+// Describe an event and whether its type ever allows approve/reject buttons.
+// showApproveButton only marks "this type is eligible"; actual display also
+// requires the actor to currently be in pendingMembers. Previously we relied on
+// ev.resolvedAt alone, which could get out of sync with DB (resolvedAt is set
+// via updateMany server-side without broadcast).
 function describeEvent(ev) {
   const who = <strong>{ev.actor?.displayName ?? "Someone"}</strong>;
   const task = ev.payload?.taskTitle ? `"${ev.payload.taskTitle}"` : "a task";
@@ -73,11 +74,11 @@ function describeEvent(ev) {
   }
 }
 
-// ── History 列表：从 events 数据渲染 ──
-// isAdmin + onApprove/onReject + pendingUserIds 只在 join_request 事件显示按钮时用到
-// 按钮显示需要两个条件同时满足:
-//   1. ev.resolvedAt 为 null (这条特定 event 自己没被处理过)
-//   2. actor 当前在 pendingMembers 里
+// History list rendered from events.
+// isAdmin + onApprove/onReject + pendingUserIds are only used for join_request buttons.
+// Buttons show only when BOTH conditions hold:
+//   1. ev.resolvedAt is null (this specific event hasn't been acted on)
+//   2. actor is currently in pendingMembers
 function HistoryList({ events, isAdmin, onApprove, onReject, pendingUserIds }) {
   if (!events || events.length === 0) {
     return (
@@ -96,11 +97,11 @@ function HistoryList({ events, isAdmin, onApprove, onReject, pendingUserIds }) {
     <div className="live-history-list">
       {events.map((ev) => {
         const { text, showApproveButton } = describeEvent(ev);
-        // 两个条件同时用:
-        //  - !ev.resolvedAt: 这条 event 自己还没被 approve/reject
-        //  - stillPending: 这个人当前确实还在等待审批
-        // 只看 pending 会在同一人第二次 request 时把旧 event 也点亮。
-        // 只看 resolvedAt 在多 tab / 多 admin 场景下会 stale。两者一起用互相补足。
+        // Why both checks:
+        //   - !ev.resolvedAt: this event hasn't been approve/rejected
+        //   - stillPending: the user is still waiting
+        // Pending alone would re-light old events when the same user re-requests.
+        // resolvedAt alone gets stale across tabs / admins. Together they cover each other.
         const actorId = String(ev.actor?._id ?? "");
         const stillPending = actorId && pendingUserIds?.has(actorId);
         const notResolved = !ev.resolvedAt;
@@ -135,7 +136,7 @@ function HistoryList({ events, isAdmin, onApprove, onReject, pendingUserIds }) {
   );
 }
 
-// ── AddTaskModal：从所有任务里挑未加入 room 的 ──
+// AddTaskModal: pick from all tasks not already in the room.
 function AddTaskModal({ onClose, onPick, selectedIds, tasks }) {
   const available = tasks.filter((t) => {
     const done =
@@ -202,7 +203,7 @@ function AddTaskModal({ onClose, onPick, selectedIds, tasks }) {
   );
 }
 
-// ── SelfPanel：本人 tasks + add button + remove 菜单 ──
+// SelfPanel: own tasks + add button + remove menu.
 export function SelfPanel({
   tasks,
   roomTasks,
@@ -217,8 +218,8 @@ export function SelfPanel({
 }) {
   const [showModal, setShowModal] = useState(false);
   const [menuFor, setMenuFor] = useState(null);
-  // 拖动期间的即时值，优先于 roomTasks 显示。
-  // taskId -> progressNumerator。未在 map 里的 task 用 roomTasks 里的值。
+  // Live drag values override roomTasks during interaction.
+  // taskId -> progressNumerator. Tasks not in the map use roomTasks value.
   const [overrides, setOverrides] = useState({});
 
   useEffect(() => {
@@ -305,19 +306,19 @@ export function SelfPanel({
                 max="100"
                 value={pct}
                 onChange={(e) => {
-                  // 只更新 local override，不发 PATCH（避免并发乱序）
+                  // Only update local override; don't PATCH yet (avoids out-of-order writes).
                   const newPct = Number(e.target.value);
                   const d = t.progressDenominator || 100;
                   const newNum = Math.round((newPct / 100) * d);
                   setOverrides((o) => ({ ...o, [t._id]: newNum }));
                 }}
                 onMouseUp={(e) => {
-                  // 松手时才 PATCH 一次，带 log=true 让后端记 history
+                  // PATCH once on release, with log=true so backend logs history.
                   const newPct = Number(e.target.value);
                   const d = t.progressDenominator || 100;
                   const newNum = Math.round((newPct / 100) * d);
                   onUpdateTaskProgress?.(t._id, newNum, true);
-                  // 1 秒后清除 override，让下次 render 读实际 roomTasks
+                  // Clear override after 1s so next render reads roomTasks.
                   setTimeout(() => {
                     setOverrides((o) => {
                       const next = { ...o };
@@ -387,7 +388,7 @@ export function SelfPanel({
   );
 }
 
-// ── MemberPanel：别人的只读任务 ──
+// MemberPanel: read-only view of another member's tasks.
 export function MemberPanel({
   member,
   events,
@@ -449,7 +450,7 @@ export function MemberPanel({
   );
 }
 
-// ── OverallPanel：所有人进度汇总 ──
+// OverallPanel: aggregate progress across all members.
 export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject, pendingUserIds }) {
   return (
     <>

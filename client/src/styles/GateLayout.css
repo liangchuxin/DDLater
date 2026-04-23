@@ -1,5 +1,3 @@
-/* GateLayout: 透明 header + 底部铺满的 bg image,无 sidebar */
-
 .gate-layout {
   position: relative;
   min-height: 100dvh;
@@ -8,8 +6,6 @@
   overflow-x: hidden;
 }
 
-/* bg 图贴底:容器 100vw × 70vh,cover 保持比例,超出的从顶部裁掉 */
-/* mask: 从下到上渐变透明,底部实、顶部全透 */
 .gate-bg {
   position: fixed;
   bottom: 0;
@@ -25,7 +21,6 @@
   mask-image: linear-gradient(to top, black 0%, transparent 100%);
 }
 
-/* 透明 header, 88px 高 */
 .gate-header {
   display: flex;
   align-items: center;
@@ -86,7 +81,6 @@
   }
 }
 
-/* content 撑满剩余高度,让里面的 .create-room-page 能居中 */
 .gate-content {
   flex: 1;
   display: flex;

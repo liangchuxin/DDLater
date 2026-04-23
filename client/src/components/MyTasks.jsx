@@ -42,7 +42,7 @@ function TaskCard({ task, onComplete }) {
   const [completed, setCompleted] = useState(
     task.progressNumerator >= task.progressDenominator && task.progressDenominator > 0
   );
-  // 变灰只跟初始 server 数据走，不随点击实时更新
+  // Grey-out follows the server's initial state, not live click toggles
   const [greyedOut] = useState(
     task.progressNumerator >= task.progressDenominator && task.progressDenominator > 0
   );

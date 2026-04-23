@@ -55,7 +55,6 @@ body {
   margin: 0;
 }
 
-/* Stardew Valley 像素字体，用于 .live-room-name 和 .live-panel-badge 等像素风元素 */
 @font-face {
   font-family: 'StardewValley';
   src: url('/fonts/StardewValley.ttf') format('truetype');

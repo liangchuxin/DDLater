@@ -59,7 +59,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* 未登录 / 跳转至产品界面 landing page */}
+              {/* Guest routes: redirected to dashboard once logged in */}
               <Route
                 path="/login"
                 element={

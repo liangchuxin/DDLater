@@ -162,7 +162,6 @@
   background: var(--redbg);
 }
 
-/* school readonly — 和 input 一样的外观但不可编辑 */
 .mt-school-readonly {
   width: 100%;
   padding: 11px 16px;

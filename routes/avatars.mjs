@@ -10,14 +10,14 @@ const requireLogin = (req, res, next) => {
   next();
 };
 
-// GET /api/avatars — 当前用户的所有小人
+// GET /api/avatars — list all avatars for the current user
 router.get("/", requireLogin, async (req, res) => {
   const avatars = await Avatar.find({ user: req.session.userId }).sort({ createdAt: -1 });
   const profile = await Profile.findOne({ user: req.session.userId });
   return res.json({ avatars, activeAvatarId: profile?.activeAvatar ?? null });
 });
 
-// POST /api/avatars — 新建小人，自动设为 active
+// POST /api/avatars — create a new avatar and auto-activate it
 router.post("/", requireLogin, async (req, res) => {
   const { avatarGrid, avatarCuts, name, sourceImageUrl } = req.body;
   if (!avatarGrid || !avatarCuts) return res.status(400).json({ error: "Missing avatarGrid or avatarCuts." });
@@ -30,7 +30,7 @@ router.post("/", requireLogin, async (req, res) => {
     avatarCuts,
   });
 
-  // 自动设为当前激活小人
+  // Auto-activate the newly created avatar
   await Profile.findOneAndUpdate(
     { user: req.session.userId },
     { $set: { activeAvatar: avatar._id } }
@@ -39,7 +39,7 @@ router.post("/", requireLogin, async (req, res) => {
   return res.status(201).json({ avatar });
 });
 
-// PATCH /api/avatars/:id/activate — 切换激活小人
+// PATCH /api/avatars/:id/activate — switch active avatar
 router.patch("/:id/activate", requireLogin, async (req, res) => {
   const avatar = await Avatar.findOne({ _id: req.params.id, user: req.session.userId });
   if (!avatar) return res.status(404).json({ error: "Avatar not found." });
@@ -51,19 +51,19 @@ router.patch("/:id/activate", requireLogin, async (req, res) => {
   return res.json({ activeAvatarId: avatar._id });
 });
 
-// DELETE /api/avatars/:id — 删除小人 (default 不能删)
+// DELETE /api/avatars/:id — delete an avatar (default cannot be deleted)
 router.delete("/:id", requireLogin, async (req, res) => {
-  // 先查一下这个 avatar 是否是 default
+  // Check if this is the default first
   const existing = await Avatar.findOne({ _id: req.params.id, user: req.session.userId });
   if (!existing) return res.status(404).json({ error: "Avatar not found." });
   if (existing.isDefault) return res.status(403).json({ error: "Default avatar cannot be deleted." });
 
   await Avatar.deleteOne({ _id: existing._id });
 
-  // 如果删的是当前激活的，把 activeAvatar 清空
+  // If the active avatar was deleted, pick another or clear.
   const profile = await Profile.findOne({ user: req.session.userId });
   if (profile?.activeAvatar?.toString() === req.params.id) {
-    // 找最新的其他小人顶上
+    // Fall back to the most recent remaining avatar
     const next = await Avatar.findOne({ user: req.session.userId }).sort({ createdAt: -1 });
     await Profile.findOneAndUpdate(
       { user: req.session.userId },

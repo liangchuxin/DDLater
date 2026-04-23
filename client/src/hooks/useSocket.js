@@ -3,24 +3,24 @@ import { io } from "socket.io-client";
 
 const API = import.meta.env.VITE_API_URL;
 
-// 全局单例 socket 实例。多个组件同时用 useSocket 只会共享同一连接。
+// Shared singleton socket. Multiple components using useSocket reuse the same connection.
 let sharedSocket = null;
 
 export function getSocket() {
   if (!sharedSocket) {
     sharedSocket = io(API, {
-      withCredentials: true, // 带上 cookie，后端靠 session 认用户
+      withCredentials: true, // send cookies; backend authenticates via session
       autoConnect: true,
     });
   }
   return sharedSocket;
 }
 
-// 订阅某个 study room 的实时事件。
-// onEvent 每次有新 room-event 广播时触发。
-// onPresence 收到 online 列表更新时触发。
-// onSessionStart / onSessionEnd 可选，收到 session 计时事件时触发。
-// 进组件时 socket.emit('join-room', roomUid)、退出时 leave-room。
+// Subscribe to a study room's live events.
+// onEvent fires on every room-event broadcast.
+// onPresence fires on online list updates.
+// onSessionStart / onSessionEnd are optional; fire on session timer events.
+// On mount: socket.emit('join-room', roomUid). On unmount: leave-room.
 export function useRoomSocket(
   roomUid,
   onEvent,
@@ -67,8 +67,8 @@ export function useRoomSocket(
   }, [roomUid]);
 }
 
-// 订阅一个任意名称的 socket 事件（用于个人通知类，比如 join-rejected）。
-// enabled=false 时不订阅，方便条件开关。
+// Subscribe to an arbitrary socket event (useful for personal notifications like join-rejected).
+// enabled=false skips subscribing, handy for conditional wiring.
 export function useSocketEvent(eventName, handler, enabled = true) {
   const handlerRef = useRef(handler);
   useEffect(() => {

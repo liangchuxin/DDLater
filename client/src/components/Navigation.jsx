@@ -106,7 +106,7 @@ export default function Navigation({ children }) {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).formatToParts(now); // 用的还是 now
+  }).formatToParts(now);
 
   const get = (type) => parts.find((p) => p.type === type)?.value ?? "";
   const formatted = `${get("weekday").toUpperCase()} ${get("month").toUpperCase()} ${get("day")}, ${get("year")} · ${now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}`;
@@ -125,14 +125,10 @@ export default function Navigation({ children }) {
       {/* Header */}
       <header className="header">
         <div className="header-brand" onClick={() => navigate("/")}>
-          {/* <div className="brand-word">
-            DD<span>Later</span>
-          </div> */}
           <img src={logoLight} alt="DDLater" />
         </div>
         <div className="header-mid">
           <span className="h-date">{formatted}</span>
-          {/* 之后换成实时在线人数 */}
           <span className="h-live">
             <div className="live-sq"></div>online
           </span>

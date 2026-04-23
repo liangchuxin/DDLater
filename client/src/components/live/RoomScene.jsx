@@ -9,7 +9,7 @@ import {
 } from "./roomConfig";
 import { sideCenterX } from "./liveUtils";
 
-// ── SideSlot：bean_bag / bed / sofa 三种 ──
+// SideSlot: bean_bag / bed / sofa.
 function SideSlot({ entry, position, canvasW, canvasH, charH }) {
   const { furniture, member } = entry;
   const key = furniture.key;
@@ -17,10 +17,11 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
   const k = canvasH / CANVAS_REF_H;
   const z = Z_LAYERS[furniture.zSlot];
 
-  // 离线时只让角色半透明,家具保持 opacity 1。
-  // 关键: opacity<1 会创建新的 stacking context,如果应用在外层 wrapper 上,
-  // 整个 SideSlot (带家具) 会被 z-index=1 的背景图覆盖。所以 offlineStyle
-  // 只能应用在包 avatar 的 div 上。undefined 默认作在线。
+  // Offline: only dim the character; keep furniture at opacity 1.
+  // Important: opacity<1 creates a new stacking context. If applied to the outer
+  // wrapper, the whole SideSlot (furniture included) would end up under the
+  // background (z=1). So only apply offlineStyle to the div that wraps the avatar.
+  // undefined defaults to online.
   const offlineStyle = member.isOnline === false ? { opacity: 0.35 } : {};
 
   const cx = sideCenterX(
@@ -39,7 +40,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
     />
   );
 
-  // ── Bean bag ──
+  // Bean bag
   if (key === "bean_bag") {
     const bagW = L.bagWidth * k;
     const bagH = L.bagHeight * k;
@@ -90,7 +91,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
     );
   }
 
-  // ── Bed（双层图层，人夹在中间） ──
+  // Bed (two image layers sandwiching the character)
   if (key === "bed") {
     const bedW = L.bedWidth * k;
     const bedH = L.bedHeight * k;
@@ -158,7 +159,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
     );
   }
 
-  // ── Sofa（pixelChar 内部砍腿） ──
+  // Sofa (pixelChar clips legs internally)
   if (key === "sofa") {
     const sofaW = L.sofaWidth * k;
     const sofaH = L.sofaHeight * k;
@@ -214,7 +215,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
   return null;
 }
 
-// ── RoomScene 主组件 ──
+// Main RoomScene component.
 export default function RoomScene({
   layout,
   canvasW,
@@ -247,7 +248,7 @@ export default function RoomScene({
   ];
   const deskImgLeft = canvasW / 2 - deskImgWidth / 2;
 
-  // World = 比 canvas 更宽的可拖动容器
+  // World = draggable container wider than the canvas
   const extraEachSide = (canvasW * (WORLD_SCALE - 1)) / 2;
   const worldW = canvasW * WORLD_SCALE;
 
@@ -265,7 +266,7 @@ export default function RoomScene({
           willChange: "transform",
         }}
       >
-        {/* Background：保持 aspect，相对 world 居中 */}
+        {/* Background: aspect preserved, centered within the world */}
         <img
           src={bgSrc}
           alt=""
@@ -291,7 +292,7 @@ export default function RoomScene({
             height: "100%",
           }}
         >
-          {/* Desk 角色 */}
+          {/* Desk characters */}
           {deskEntries.map((entry) => {
             const centerX = deskCharCenters[entry.slotIndex];
             const offline = entry.member.isOnline === false;
@@ -320,7 +321,7 @@ export default function RoomScene({
             );
           })}
 
-          {/* Desk 图（遮住人） */}
+          {/* Desk image (covers the characters) */}
           {deskEntries.length > 0 && (
             <img
               src={assetUrl(deskFurniture.imageKeys[0])}
@@ -338,7 +339,7 @@ export default function RoomScene({
             />
           )}
 
-          {/* Side slot 家具 */}
+          {/* Side slot furniture */}
           {leftEntry && (
             <div style={{ position: "absolute", inset: 0 }}>
               <SideSlot

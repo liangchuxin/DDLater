@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 const router = express.Router();
 const Task = mongoose.model("Task");
 
-// GET /api/tasks - 获取当前用户所有 tasks
+// GET /api/tasks - current user's tasks
 router.get("/", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });
@@ -14,8 +14,8 @@ router.get("/", async (req, res) => {
   return res.json(tasks);
 });
 
-// GET /api/tasks/feed - 公开可见 tasks 的 feed，随机顺序，默认前 30 条
-// 必须在 /:id 之前注册，否则 :id 会把 'feed' 捞走
+// GET /api/tasks/feed - publicly visible tasks, randomized, 30 by default.
+// Must be registered before /:id so the param doesn't swallow 'feed'.
 router.get("/feed", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });
@@ -25,7 +25,7 @@ router.get("/feed", async (req, res) => {
   const Profile = mongoose.model("Profile");
   const StudyRoom = mongoose.model("StudyRoom");
 
-  // 先随机拿符合条件的 task ids
+  // Sample matching task ids randomly
   const sampled = await Task.aggregate([
     { $match: { hideFromClassmates: { $ne: true } } },
     { $sample: { size: limit } },
@@ -33,21 +33,20 @@ router.get("/feed", async (req, res) => {
   ]);
   const ids = sampled.map((t) => t._id);
 
-  // populate course
   const tasks = await Task.find({ _id: { $in: ids } }).populate("course");
 
-  // 按原随机顺序重排
+  // Restore the sampled order
   const taskMap = new Map(tasks.map((t) => [String(t._id), t]));
   const ordered = ids.map((id) => taskMap.get(String(id))).filter(Boolean);
 
-  // 批量拿所有涉及用户的 profile (含 activeAvatar populate)
+  // Batch-fetch all involved profiles (with activeAvatar)
   const userIds = [...new Set(ordered.map((t) => String(t.user)))];
   const profiles = await Profile.find({ user: { $in: userIds } })
     .populate("activeAvatar")
     .lean();
   const profileMap = new Map(profiles.map((p) => [String(p.user), p]));
 
-  // 查这些用户里哪些当前在任意 active study room 的 members 里
+  // Which of these users are currently members of any active study room
   const roomsWithAuthors = await StudyRoom.find(
     { active: true, "members.user": { $in: userIds } },
     { "members.user": 1 },
@@ -59,7 +58,6 @@ router.get("/feed", async (req, res) => {
     }
   }
 
-  // 组装输出
   const feed = ordered.map((t) => {
     const tObj = t.toObject();
     tObj.authorProfile = profileMap.get(String(t.user)) || null;
@@ -70,7 +68,7 @@ router.get("/feed", async (req, res) => {
   return res.json(feed);
 });
 
-// POST /api/tasks - 创建新 task
+// POST /api/tasks - create a new task
 router.post("/", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });
@@ -86,12 +84,11 @@ router.post("/", async (req, res) => {
   } = req.body;
   if (!title) return res.status(400).json({ error: "Title is required." });
 
-  // 处理 course
+  // Resolve course: use the provided school, then profile's, then 'Unspecified'.
   let courseId = null;
   if (course) {
     const Course = mongoose.model('Course');
     const Profile = mongoose.model('Profile');
-    // 优先用传入的 school，没有就用 profile 的，再没有就用 'Unspecified'
     let resolvedSchool = school;
     if (!resolvedSchool) {
       const profile = await Profile.findOne({ user: req.session.userId });
@@ -118,7 +115,7 @@ router.post("/", async (req, res) => {
   return res.json(task);
 });
 
-// GET /api/tasks/:id - 获取单个 task
+// GET /api/tasks/:id - fetch a single task
 router.get("/:id", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });
@@ -130,7 +127,7 @@ router.get("/:id", async (req, res) => {
   return res.json(task);
 });
 
-// PATCH /api/tasks/:id - 更新 task
+// PATCH /api/tasks/:id - update a task
 router.patch("/:id", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });
@@ -153,7 +150,7 @@ router.patch("/:id", async (req, res) => {
   if (hideFromClassmates !== undefined)
     updates.hideFromClassmates = hideFromClassmates;
 
-  // 读取更新前状态，用于检测是否从未完成 -> 完成过渡
+  // Capture pre-update state so we can detect the incomplete -> complete transition.
   const before = await Task.findOne({
     _id: req.params.id,
     user: req.session.userId,
@@ -173,8 +170,8 @@ router.patch("/:id", async (req, res) => {
     task.progressDenominator > 0 &&
     task.progressNumerator >= task.progressDenominator;
 
-  // 刚刚完成（以前没完成、现在完成了），给所有包含此 task 的 room emit + broadcast
-  // 或者 log=true 时（用户拖动 slider 结束），记录一条 task_progress 事件
+  // Just completed: emit + broadcast to every room containing this task.
+  // Otherwise, if log=true (slider drag end), log a task_progress event.
   const shouldLog = req.query.log === 'true';
   if (!wasComplete && nowComplete) {
     await logToRooms(req, task, 'task_complete');
@@ -185,7 +182,7 @@ router.patch("/:id", async (req, res) => {
   return res.json(task);
 });
 
-// 给所有包含此 task 的 active room 写事件并 socket 广播
+// Write an event and socket-broadcast to every active room containing this task.
 async function logToRooms(req, task, type) {
   const StudyRoom = mongoose.model("StudyRoom");
   const RoomEvent = mongoose.model("RoomEvent");
@@ -230,7 +227,7 @@ async function logToRooms(req, task, type) {
   }
 }
 
-// DELETE /api/tasks/:id - 删除 task
+// DELETE /api/tasks/:id - delete a task
 router.delete("/:id", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });

@@ -14,26 +14,31 @@ const TASK_FILTERS = [
   "0% Done",
 ];
 
-// ── layout template ────────────────────────────────────────────
-// 每 10 个 card 一轮循环: 4 个 w1 + (w2,w1,w1) + (w1,w1,w2)
+// Card width template. 10-card loop: 4 w1 + (w2,w1,w1) + (w1,w1,w2).
 const WIDTHS = [1, 1, 1, 1, 2, 1, 1, 1, 1, 2];
 
 const CI_CLASSES = [
-  "ci-1", "ci-2", "ci-3", "ci-4", "ci-5", "ci-6",
-  "ci-7", "ci-8", "ci-9", "ci-a", "ci-b", "ci-c",
+  "ci-1",
+  "ci-2",
+  "ci-3",
+  "ci-4",
+  "ci-5",
+  "ci-6",
+  "ci-7",
+  "ci-8",
+  "ci-9",
+  "ci-a",
+  "ci-b",
+  "ci-c",
 ];
 
 const COURSE_TAG_OPTIONS = ["t-ait", "t-se", "t-wd", "t-bd", "t-li"];
 
-// 常见 dept code 的明确缩写。查不到就保留原始 dept。
 const DEPT_ALIASES = {
   CSCI: "CS",
   COMP: "CS",
 };
 
-// "CSCI-UA 467" -> "CS 467"
-// "MATH-UA 120" -> "MATH 120"
-// "AIT"         -> "AIT"
 function formatCourseCode(code) {
   if (!code) return "";
   const m = code.match(/^\s*([A-Za-z]+)(?:-[A-Za-z]+)?\s*(\d+)?/);
@@ -47,12 +52,12 @@ function formatCourseCode(code) {
 function abbreviateSchool(school) {
   if (!school) return "";
   const trimmed = school.trim();
-  // 已经全是大写短名 (比如 "NYU") 就不动
+  // Already a short all-caps acronym (e.g. "NYU"): keep as-is
   if (/^[A-Z]{2,6}$/.test(trimmed)) return trimmed;
-  // 多词: 取每个词首字母大写
+  // Multi-word: take first letter of each, uppercased
   const words = trimmed.split(/\s+/).filter((w) => /^[A-Za-z]/.test(w));
   if (words.length >= 2) return words.map((w) => w[0].toUpperCase()).join("");
-  // 单词: 原样返回
+  // Single word: return as-is
   return trimmed;
 }
 
@@ -76,7 +81,7 @@ function isDueToday(task) {
   const now = new Date();
   const diffMs = due - now;
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  // 今天到期 / 24h 内 / overdue 都算
+  // Due today / within 24h / overdue all count
   return diffDays < 1;
 }
 
@@ -96,7 +101,9 @@ function taskToFeedCardProps(task, idx) {
 
   const displayName = profile.displayName || "anonymous";
   const initials = getInitials(displayName);
-  const dept = [abbreviateSchool(profile.school), profile.major].filter(Boolean).join(" ");
+  const dept = [abbreviateSchool(profile.school), profile.major]
+    .filter(Boolean)
+    .join(" ");
 
   // progress
   const num = task.progressNumerator ?? 0;
@@ -165,7 +172,7 @@ export default function Dashboard() {
   const [taskFilter, setTaskFilter] = useState("Everyone");
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
-  // My School / My Course filter 需要的参照数据
+  // Reference data for My School / My Course filters
   const [mySchool, setMySchool] = useState("");
   const [myTasks, setMyTasks] = useState([]);
   const navigate = useNavigate();
@@ -194,28 +201,29 @@ export default function Dashboard() {
     };
   }, []);
 
-  // 拉自己的 profile + tasks，派生 My School / My Course 的过滤参照
+  // Fetch own profile + tasks to derive My School / My Course filters
   useEffect(() => {
     let cancelled = false;
     fetch(`${API}/api/profile`, { credentials: "include" })
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setMySchool(d.school ?? ""); })
+      .then((d) => {
+        if (!cancelled) setMySchool(d.school ?? "");
+      })
       .catch(() => {});
     fetch(`${API}/api/tasks`, { credentials: "include" })
       .then((r) => r.json())
-      .then((d) => { if (!cancelled) setMyTasks(Array.isArray(d) ? d : []); })
+      .then((d) => {
+        if (!cancelled) setMyTasks(Array.isArray(d) ? d : []);
+      })
       .catch(() => {});
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // 我修过的 course code 集合。用来判断 feed 里的 task 是否是“同课”
+  // Set of course codes I have tasks for. Used to flag "same course" feed entries.
   const myCourseCodes = useMemo(
-    () =>
-      new Set(
-        myTasks
-          .map((t) => t.course?.courseCode)
-          .filter(Boolean),
-      ),
+    () => new Set(myTasks.map((t) => t.course?.courseCode).filter(Boolean)),
     [myTasks],
   );
 
@@ -238,7 +246,6 @@ export default function Dashboard() {
   return (
     <main className="main">
       <div className="main-inner">
-        {/* ── What people are working on ── */}
         <div className="sec-head">
           <div className="sec-title">What people are working on</div>
         </div>
@@ -297,7 +304,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* ── Study Rooms ── */}
         <StudyRoomsSection />
       </div>
     </main>

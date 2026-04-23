@@ -40,7 +40,7 @@ export default function ProfileSettings() {
 
   const fileInputRef = useRef(null);
 
-  // resize + center crop 到 256×256,控制 base64 在 ~20KB,防止 Mongo 16MB 文档限
+  // Resize + center-crop to 256x256, keeping base64 around 20KB to stay well under Mongo's 16MB doc limit
   const fileToAvatarDataURL = async (file) => {
     const imgUrl = URL.createObjectURL(file);
     try {
@@ -70,7 +70,7 @@ export default function ProfileSettings() {
 
   const handleAvatarFile = async (e) => {
     const file = e.target.files?.[0];
-    // reset 让同一张图再选一次也能触发 change
+    // Reset so picking the same file again still triggers change
     e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -105,7 +105,7 @@ export default function ProfileSettings() {
   };
 
   const handleSave = async () => {
-    // 学校搜索框处于未确认状态
+    // School searchbox is in an unconfirmed state
     if (draftSchool && !schoolConfirmed) {
       setMessage("Please select a school from the dropdown.");
       setIsError(true);
@@ -209,7 +209,7 @@ export default function ProfileSettings() {
                 style={{ display: "none" }}
                 onChange={handleAvatarFile}
               />
-              {/* 右上角编辑按鈕 */}
+              {/* Edit button in top-right corner */}
               <div
                 className="ps-avatar-edit"
                 title="Change avatar"
