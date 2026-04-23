@@ -12,7 +12,7 @@ import "../styles/AvatarStudio.css";
 
 const API = import.meta.env.VITE_API_URL;
 
-// 小型 canvas 预览组件，用于列表里的缩略图
+// Small canvas preview for thumbnails in the list
 function AvatarThumb({ grid, size = 80 }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -21,7 +21,7 @@ function AvatarThumb({ grid, size = 80 }) {
   return <canvas ref={ref} />;
 }
 
-// 带动画的预览
+// Animated preview
 function AvatarAnimPreview({ grid, cuts, size = 180 }) {
   const ref = useRef(null);
   useEffect(() => {
@@ -50,7 +50,7 @@ export default function AvatarStudio() {
 
   const { confirm, modal: confirmModal } = useConfirm();
 
-  // 加载已有小人列表
+  // Load existing avatars
   const loadAvatars = useCallback(async () => {
     const res = await fetch(`${API}/api/avatars`, { credentials: "include" });
     if (!res.ok) return;
@@ -61,7 +61,7 @@ export default function AvatarStudio() {
 
   useEffect(() => { loadAvatars(); }, [loadAvatars]);
 
-  // 渲染静态预览
+  // Render static preview
   useEffect(() => {
     if (staticCanvasRef.current && grid) {
       renderStatic(staticCanvasRef.current, grid, 180);
@@ -167,9 +167,9 @@ export default function AvatarStudio() {
         </div>
 
         <div className="as-wrap">
-          {/* ── 左栏 ── */}
+          {/* Left column */}
           <div className="as-left">
-            {/* 上传区 */}
+            {/* Upload zone */}
             <div className="as-upload-zone" onClick={() => fileInputRef.current?.click()}>
               {imageSrc
                 ? <img src={imageSrc} alt="source" />
@@ -187,7 +187,7 @@ export default function AvatarStudio() {
               </button>
             </div>
 
-            {/* 预览 */}
+            {/* Preview */}
             {grid && (
               <>
                 <div className="as-preview-row">
@@ -219,7 +219,7 @@ export default function AvatarStudio() {
             )}
           </div>
 
-          {/* ── 右栏：已有小人 ── */}
+          {/* Right column: existing avatars */}
           <div className="as-right">
             <div className="as-list-title">Your characters ({avatars.length})</div>
 

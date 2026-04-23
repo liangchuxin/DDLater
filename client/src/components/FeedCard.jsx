@@ -11,7 +11,7 @@ export default function FeedCard({
   courseTag,    // CSS class e.g. 't-ait'
   bgClass,      // card-img bg e.g. 'ci-1'
   dotStatus,    // 'on' | 'recent' | 'off'
-  avatarGrid,   // 用户自己的 avatar grid
+  avatarGrid,   // user's avatar grid
   initials,     // avatar initials e.g. 'CL'
   avClass = '', // extra av class e.g. 'av-g'
   username,

@@ -86,8 +86,8 @@ export function JoinRoomCodeForm({
     <>
       {!compact && <h1 className="create-room-title">Join a Study Room</h1>}
       <p className="create-room-sub">
-        Enter the 7-digit room code shared with you. The host will approve
-        your request before you can enter.
+        Enter the 7-digit room code shared with you. The host will approve your
+        request before you can enter.
       </p>
       <form onSubmit={onSubmit} className="create-room-form">
         <label className="create-room-field">
@@ -143,15 +143,15 @@ export default function JoinCodePage() {
 
   return (
     <GateLayout>
-    <div className="create-room-page">
-      <PixelBox variant="retro" className="create-room-card">
-        <JoinRoomCodeForm
-          initialCode={params.get("code") ?? ""}
-          onCancel={() => navigate("/")}
-          onSuccess={handleSuccess}
-        />
-      </PixelBox>
-    </div>
+      <div className="create-room-page">
+        <PixelBox variant="retro" className="create-room-card">
+          <JoinRoomCodeForm
+            initialCode={params.get("code") ?? ""}
+            onCancel={() => navigate("/")}
+            onSuccess={handleSuccess}
+          />
+        </PixelBox>
+      </div>
     </GateLayout>
   );
 }
@@ -174,10 +174,7 @@ export function JoinRoomModal({ open, onClose }) {
         className="create-room-card join-modal-card"
         onClick={(e) => e.stopPropagation()}
       >
-        <JoinRoomCodeForm
-          onCancel={onClose}
-          onSuccess={handleSuccess}
-        />
+        <JoinRoomCodeForm onCancel={onClose} onSuccess={handleSuccess} />
       </PixelBox>
     </div>
   );

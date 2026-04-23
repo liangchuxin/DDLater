@@ -4,9 +4,10 @@ import SchoolSearch from "./SchoolSearch";
 import CourseSearch from "./CourseSearch";
 import "../styles/ManageTask.css";
 
+// 只有两个选项: public 对应 hideFromClassmates=false，private 对应 true。
+// 后端字段名是历史遗留，面向用户文案走 private。
 const VISIBILITY_OPTIONS = [
   { value: "public", label: "Visible to all" },
-  { value: "school", label: "Hidden from classmates" },
   { value: "private", label: "Private" },
 ];
 
@@ -40,7 +41,7 @@ function TaskForm({
     initialData?.progressDenominator ?? 1,
   );
   const [visibility, setVisibility] = useState(
-    initialData?.hideFromClassmates ? "school" : "public",
+    initialData?.hideFromClassmates ? "private" : "public",
   );
   const [error, setError] = useState("");
 
@@ -63,8 +64,7 @@ function TaskForm({
       school,
       progressNumerator: Number(progressDone),
       progressDenominator: Number(progressTotal),
-      hideFromClassmates: visibility === "school",
-      private: visibility === "private",
+      hideFromClassmates: visibility === "private",
     });
   };
 

@@ -9,7 +9,7 @@ const API = import.meta.env.VITE_API_URL;
 
 // JoinConfirm: /join/:roomId 的 gate 页。
 // fetch 一次 room → 根据 isMember / isPending / active / 不存在 走不同分支。
-// ?from=rooms 时 back 按钮回 /rooms,否则回 /
+// back 默认按 ?from=rooms 回 /rooms，其他回 /；full 态下强制回 /rooms。
 export default function JoinConfirm() {
   const navigate = useNavigate();
   const { roomId } = useParams();
@@ -211,7 +211,7 @@ export default function JoinConfirm() {
             <button
               type="button"
               className="create-room-btn primary"
-              onClick={() => navigate(backTo)}
+              onClick={() => navigate("/rooms")}
             >
               Back
             </button>

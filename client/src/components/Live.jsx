@@ -33,10 +33,6 @@ import "../styles/Live.css";
 
 const API = import.meta.env.VITE_API_URL;
 
-// room.background 存文件名；前端拼到 /room/backgrounds/ 下
-const bgUrlFromRoom = (room) =>
-  room?.background?.key ? `/room/backgrounds/${room.background.key}` : BG_SRC;
-
 export default function Live() {
   const { uid: roomUid } = useParams();
   const navigate = useNavigate();
@@ -295,20 +291,22 @@ export default function Live() {
   }, [room, self]);
 
   // ── 背景设置 ──
+  // room.background 存文件名+偏移；room 还没到 或 老数据没 background 时走 fallback
   const bg = useMemo(() => {
-    if (room?.background) {
+    const b = room?.background;
+    if (!b) {
       return {
-        src: bgUrlFromRoom(room),
-        heightPct: room.background.heightPct ?? BG_HEIGHT_PCT,
-        offsetX: room.background.offsetX ?? BG_OFFSET_X_REF,
-        offsetY: room.background.offsetY ?? BG_OFFSET_Y_REF,
+        src: BG_SRC,
+        heightPct: BG_HEIGHT_PCT,
+        offsetX: BG_OFFSET_X_REF,
+        offsetY: BG_OFFSET_Y_REF,
       };
     }
     return {
-      src: BG_SRC,
-      heightPct: BG_HEIGHT_PCT,
-      offsetX: BG_OFFSET_X_REF,
-      offsetY: BG_OFFSET_Y_REF,
+      src: `/room/backgrounds/${b.key}`,
+      heightPct: b.heightPct,
+      offsetX: b.offsetX,
+      offsetY: b.offsetY,
     };
   }, [room]);
 
@@ -436,11 +434,11 @@ export default function Live() {
       const seat = seats.find((s) => s.memberIdx === targetIdx);
       if (seat) {
         if (seat.position === "center") {
-          const halfGap = (seat.furniture.layout?.charHalfGap ?? 90) * k;
+          const halfGap = seat.furniture.layout.charHalfGap * k;
           targetCanvasX =
             canvasSize.w / 2 + (seat.slotIndex === 0 ? -halfGap : halfGap);
         } else {
-          const sideInset = (seat.furniture.layout?.sideInset ?? 260) * k;
+          const sideInset = seat.furniture.layout.sideInset * k;
           targetCanvasX = sideCenterX(
             seat.position,
             sideInset,

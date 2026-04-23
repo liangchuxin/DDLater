@@ -14,8 +14,7 @@ export const SIDE_MIN_FROM_CENTER = 460; // side 家具中心距 canvas 中心�
 // ── Assets ──
 // 家具图片存在 client/public/room/ 下。数据库的 imageKeys 存文件名，前端拼路径。
 export const ROOM_ASSETS_PATH = "/room/";
-export const assetUrl = (filename) =>
-  filename ? `${ROOM_ASSETS_PATH}${filename}` : null;
+export const assetUrl = (filename) => `${ROOM_ASSETS_PATH}${filename}`;
 
 // ── Background ──
 // 这些只是 demo/fallback 值。真实 room 从 StudyRoom.background 读。

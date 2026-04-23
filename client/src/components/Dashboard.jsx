@@ -165,6 +165,9 @@ export default function Dashboard() {
   const [taskFilter, setTaskFilter] = useState("Everyone");
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  // My School / My Course filter 需要的参照数据
+  const [mySchool, setMySchool] = useState("");
+  const [myTasks, setMyTasks] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -191,13 +194,46 @@ export default function Dashboard() {
     };
   }, []);
 
+  // 拉自己的 profile + tasks，派生 My School / My Course 的过滤参照
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API}/api/profile`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setMySchool(d.school ?? ""); })
+      .catch(() => {});
+    fetch(`${API}/api/tasks`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((d) => { if (!cancelled) setMyTasks(Array.isArray(d) ? d : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  // 我修过的 course code 集合。用来判断 feed 里的 task 是否是“同课”
+  const myCourseCodes = useMemo(
+    () =>
+      new Set(
+        myTasks
+          .map((t) => t.course?.courseCode)
+          .filter(Boolean),
+      ),
+    [myTasks],
+  );
+
   const filtered = useMemo(() => {
     if (taskFilter === "Due Today") return tasks.filter(isDueToday);
     if (taskFilter === "0% Done")
       return tasks.filter((t) => (t.progressNumerator ?? 0) === 0);
-    // Everyone / My School / My Course → 先全部 (后两个以后接)
+    if (taskFilter === "My School") {
+      if (!mySchool) return [];
+      return tasks.filter((t) => t.authorProfile?.school === mySchool);
+    }
+    if (taskFilter === "My Course") {
+      if (myCourseCodes.size === 0) return [];
+      return tasks.filter((t) => myCourseCodes.has(t.course?.courseCode));
+    }
+    // Everyone
     return tasks;
-  }, [tasks, taskFilter]);
+  }, [tasks, taskFilter, mySchool, myCourseCodes]);
 
   return (
     <main className="main">

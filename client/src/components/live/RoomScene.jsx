@@ -4,10 +4,6 @@ import {
   M_APPROX,
   WORLD_SCALE,
   SIDE_MIN_FROM_CENTER,
-  BG_SRC,
-  BG_HEIGHT_PCT,
-  BG_OFFSET_X_REF,
-  BG_OFFSET_Y_REF,
   Z_LAYERS,
   assetUrl,
 } from "./roomConfig";
@@ -17,9 +13,9 @@ import { sideCenterX } from "./liveUtils";
 function SideSlot({ entry, position, canvasW, canvasH, charH }) {
   const { furniture, member } = entry;
   const key = furniture.key;
-  const L = furniture.layout ?? {};
+  const L = furniture.layout;
   const k = canvasH / CANVAS_REF_H;
-  const z = Z_LAYERS[furniture.zSlot] ?? Z_LAYERS["char-back"];
+  const z = Z_LAYERS[furniture.zSlot];
 
   // 离线时只让角色半透明,家具保持 opacity 1。
   // 关键: opacity<1 会创建新的 stacking context,如果应用在外层 wrapper 上,
@@ -29,15 +25,15 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
 
   const cx = sideCenterX(
     position,
-    (L.sideInset ?? 260) * k,
+    L.sideInset * k,
     canvasW,
     SIDE_MIN_FROM_CENTER * k,
   );
 
   const playerAvatar = (clipBottomRows = 0) => (
     <PlayerAvatar
-      avatarGrid={member.activeAvatar?.avatarGrid ?? null}
-      avatarCuts={member.activeAvatar?.avatarCuts ?? null}
+      avatarGrid={member.activeAvatar?.avatarGrid}
+      avatarCuts={member.activeAvatar?.avatarCuts}
       size={charH}
       clipBottomRows={clipBottomRows}
     />
@@ -63,7 +59,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
         }}
       >
         <img
-          src={assetUrl(furniture.imageKeys?.[0])}
+          src={assetUrl(furniture.imageKeys[0])}
           alt=""
           draggable={false}
           style={{
@@ -115,7 +111,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
         }}
       >
         <img
-          src={assetUrl(furniture.imageKeys?.[0])}
+          src={assetUrl(furniture.imageKeys[0])}
           alt=""
           draggable={false}
           style={{
@@ -145,7 +141,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
           {playerAvatar()}
         </div>
         <img
-          src={assetUrl(furniture.imageKeys?.[1])}
+          src={assetUrl(furniture.imageKeys[1])}
           alt=""
           draggable={false}
           style={{
@@ -184,7 +180,7 @@ function SideSlot({ entry, position, canvasW, canvasH, charH }) {
         }}
       >
         <img
-          src={assetUrl(furniture.imageKeys?.[0])}
+          src={assetUrl(furniture.imageKeys[0])}
           alt=""
           draggable={false}
           style={{
@@ -230,25 +226,21 @@ export default function RoomScene({
 }) {
   if (!canvasH) return null;
 
-  // bg 默认值兑底（demo 模式可能不传 prop）
-  const bgSrc = bg?.src ?? BG_SRC;
-  const bgHeightPct = bg?.heightPct ?? BG_HEIGHT_PCT;
-  const bgOffsetX = bg?.offsetX ?? BG_OFFSET_X_REF;
-  const bgOffsetY = bg?.offsetY ?? BG_OFFSET_Y_REF;
+  const { src: bgSrc, heightPct: bgHeightPct, offsetX: bgOffsetX, offsetY: bgOffsetY } = bg;
 
   const deskEntries = layout.filter((e) => e.position === "center");
   const leftEntry = layout.find((e) => e.position === "left");
   const rightEntry = layout.find((e) => e.position === "right");
   const deskFurniture = deskEntries[0]?.furniture;
-  const deskLayout = deskFurniture?.layout ?? {};
-  const deskZ = Z_LAYERS[deskFurniture?.zSlot] ?? Z_LAYERS["char-front"];
+  const deskLayout = deskFurniture?.layout;
+  const deskZ = deskFurniture ? Z_LAYERS[deskFurniture.zSlot] : null;
 
   const k = canvasH / CANVAS_REF_H;
-  const deskImgBottom = (deskLayout.imgBottom ?? -91) * k;
-  const deskImgWidth = (deskLayout.imgWidth ?? 328) * k;
-  const deskCharBottom = (deskLayout.charBottom ?? 40) * k;
-  const deskCharW = (deskLayout.charWidth ?? 161) * k;
-  const halfGap = (deskLayout.charHalfGap ?? 90) * k;
+  const deskImgBottom = (deskLayout?.imgBottom ?? 0) * k;
+  const deskImgWidth = (deskLayout?.imgWidth ?? 0) * k;
+  const deskCharBottom = (deskLayout?.charBottom ?? 0) * k;
+  const deskCharW = (deskLayout?.charWidth ?? 0) * k;
+  const halfGap = (deskLayout?.charHalfGap ?? 0) * k;
   const deskCharCenters = [
     canvasW / 2 - halfGap, // slot 0 = left seat
     canvasW / 2 + halfGap, // slot 1 = right seat
@@ -320,8 +312,8 @@ export default function RoomScene({
                 }}
               >
                 <PlayerAvatar
-                  avatarGrid={entry.member.activeAvatar?.avatarGrid ?? null}
-                  avatarCuts={entry.member.activeAvatar?.avatarCuts ?? null}
+                  avatarGrid={entry.member.activeAvatar?.avatarGrid}
+                  avatarCuts={entry.member.activeAvatar?.avatarCuts}
                   size={charH}
                 />
               </div>
@@ -329,9 +321,9 @@ export default function RoomScene({
           })}
 
           {/* Desk 图（遮住人） */}
-          {deskEntries.length > 0 && deskFurniture && (
+          {deskEntries.length > 0 && (
             <img
-              src={assetUrl(deskFurniture.imageKeys?.[0])}
+              src={assetUrl(deskFurniture.imageKeys[0])}
               alt=""
               draggable={false}
               style={{

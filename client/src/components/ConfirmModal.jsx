@@ -2,9 +2,9 @@ import { useState, useCallback, useRef } from "react";
 import PixelBox from "./PixelBox";
 import "../styles/ConfirmModal.css";
 
-// 一个基于 PixelBox 的通用确认弹窗,替代 window.confirm()。
-// 支持 title / message / confirmLabel / cancelLabel / variant (primary | danger)。
-// 点 backdrop 空白区等于 cancel。
+// PixelBox-based confirm dialog replacing window.confirm().
+// Props: title / message / confirmLabel / cancelLabel / variant (primary | danger).
+// Clicking the backdrop cancels.
 function ConfirmModal({
   title,
   message,
@@ -45,13 +45,12 @@ function ConfirmModal({
   );
 }
 
-// useConfirm: 返回 async confirm() 函数和 modal JSX。
-// 用法:
+// useConfirm: returns async confirm() and the modal JSX.
+// Usage:
 //   const { confirm, modal } = useConfirm();
 //   const ok = await confirm({ title, message, variant: "danger", confirmLabel: "Leave" });
 //   if (!ok) return;
-//   ...
-// render 时记得把 {modal} 放进去,不然看不见弹窗。
+// Remember to render {modal} in the tree or the dialog won't show.
 export function useConfirm() {
   const [state, setState] = useState({ open: false, options: {} });
   const resolverRef = useRef(null);
