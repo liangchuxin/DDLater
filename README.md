@@ -1,6 +1,11 @@
+<div align="center">
+
 # DDLater
 
-**Live demo:** [ddlater.com](https://ddlater.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-ddlater.com-8b5cf6?style=for-the-badge)](https://ddlater.com) [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE)
+
+</div>
+
 
 ## Overview
 
