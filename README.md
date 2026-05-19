@@ -8,7 +8,7 @@ Ever find yourself staring at your screen with a deadline tomorrow, nothing done
 
 Instead of suffering through your last-minute crunch alone, DDLater shows you what other students are working on, when their things are due, and how far along they are. You can log your tasks and progress, join virtual study rooms with others who are currently working, and check a live procrastination index across different majors.
 
-![Main feed](documentation/feed.png)
+![Main feed](documentation/new-feed.png)
 
 ## Features
 
