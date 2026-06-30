@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import PixelBox from "./PixelBox";
 import GateLayout from "./GateLayout";
@@ -158,6 +158,16 @@ export default function JoinCodePage() {
 // JoinRoomModal: mounted from the navbar, doesn't take over the URL
 export function JoinRoomModal({ open, onClose }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   const handleSuccess = (roomId, nextStatus) => {
@@ -167,14 +177,18 @@ export function JoinRoomModal({ open, onClose }) {
   };
 
   return (
-    <div className="join-modal-backdrop" onClick={onClose}>
-      <PixelBox
-        variant="retro"
-        className="create-room-card join-modal-card"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <JoinRoomCodeForm onCancel={onClose} onSuccess={handleSuccess} />
-      </PixelBox>
+    <div
+      className="join-modal-backdrop"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Join a study room"
+    >
+      <div className="join-modal-shell" onClick={(e) => e.stopPropagation()}>
+        <PixelBox variant="retro" className="create-room-card join-modal-card">
+          <JoinRoomCodeForm onCancel={onClose} onSuccess={handleSuccess} />
+        </PixelBox>
+      </div>
     </div>
   );
 }

@@ -12,7 +12,10 @@ const requireLogin = (req, res, next) => {
 
 // GET /api/avatars — list all avatars for the current user
 router.get("/", requireLogin, async (req, res) => {
-  const avatars = await Avatar.find({ user: req.session.userId }).sort({ createdAt: -1 });
+  const avatars = await Avatar.find({ user: req.session.userId }).sort({
+    isDefault: -1,
+    createdAt: -1,
+  });
   const profile = await Profile.findOne({ user: req.session.userId });
   return res.json({ avatars, activeAvatarId: profile?.activeAvatar ?? null });
 });

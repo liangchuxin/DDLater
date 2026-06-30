@@ -11,7 +11,12 @@
 
 const COLS = 26;
 
-export function imageToGrid(img) {
+export const DEFAULT_BG_TOLERANCE = 40;
+export const MIN_BG_TOLERANCE = 0;
+export const MAX_BG_TOLERANCE = 90;
+export const BG_TOLERANCE_STEP = 5;
+
+export function imageToRawGrid(img) {
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
@@ -19,9 +24,12 @@ export function imageToGrid(img) {
   ctx.drawImage(img, 0, 0);
   const N = COLS;
   const M = Math.max(1, Math.round((N * img.naturalHeight) / img.naturalWidth));
-  let grid = extractColorGrid(ctx, img.naturalWidth, img.naturalHeight, N, M);
-  grid = autoRemoveBackground(grid, 40);
-  return grid;
+  return extractColorGrid(ctx, img.naturalWidth, img.naturalHeight, N, M);
+}
+
+export function imageToGrid(img, tolerance = DEFAULT_BG_TOLERANCE) {
+  const grid = imageToRawGrid(img);
+  return autoRemoveBackground(grid, tolerance);
 }
 
 function extractColorGrid(ctx, imgW, imgH, N, M) {
@@ -52,7 +60,7 @@ function extractColorGrid(ctx, imgW, imgH, N, M) {
 
 export function autoRemoveBackground(grid, tolerance = 40) {
   const M = grid.length, N = grid[0]?.length ?? 0;
-  if (!M || !N) return grid;
+  if (!M || !N || tolerance <= 0) return grid.map((row) => [...row]);
   const bc = new Map();
   const tally = (r, c) => { const col = grid[r]?.[c]; if (col) bc.set(col, (bc.get(col) ?? 0) + 1); };
   for (let c = 0; c < N; c++) { tally(0, c); tally(M - 1, c); }
@@ -99,6 +107,33 @@ export function renderStatic(canvas, grid, maxSize = 260, transparent = false) {
     if (!col) return;
     ctx.fillStyle = col; ctx.fillRect(i * cs, j * cs, cs, cs);
   }));
+}
+
+/** Static preview with per-cell borders for the pixel editor. */
+export function renderEditorGrid(canvas, grid, maxSize = 260) {
+  const M = grid.length, N = grid[0]?.length ?? 0;
+  if (!M || !N) return;
+  renderStatic(canvas, grid, maxSize, false);
+  const cs = Math.max(1, Math.floor(maxSize / Math.max(N, M)));
+  const ctx = canvas.getContext("2d");
+  const w = N * cs;
+  const h = M * cs;
+  ctx.strokeStyle = "rgba(13, 13, 13, 0.14)";
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= N; i++) {
+    const x = i * cs + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  for (let j = 0; j <= M; j++) {
+    const y = j * cs + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(w, y);
+    ctx.stroke();
+  }
 }
 
 export const DEFAULT_ANIM_CONFIG = {

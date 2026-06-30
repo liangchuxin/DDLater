@@ -167,11 +167,31 @@
   align-items: center;
   justify-content: center;
   z-index: 200;
-  padding: 24px;
+  padding: 32px 24px;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
+
+.join-modal-shell {
+  width: min(480px, calc(100vw - 48px));
+  max-width: 480px;
+  flex-shrink: 0;
+}
+
 .join-modal-card {
   width: 100%;
-  max-width: 480px;
-  max-height: calc(100vh - 60px);
-  overflow-y: auto;
+}
+
+.join-modal-card .create-room-sub,
+.join-modal-card .create-room-form,
+.join-modal-card .create-room-actions {
+  min-width: 0;
+}
+
+.join-modal-card .create-room-sub {
+  overflow-wrap: anywhere;
+}
+
+.join-modal-card .create-room-actions {
+  flex-wrap: wrap;
 }

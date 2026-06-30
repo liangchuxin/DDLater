@@ -14,13 +14,15 @@ router.get("/", async (req, res) => {
   return res.json(tasks);
 });
 
-// GET /api/tasks/feed - publicly visible tasks, randomized, 30 by default.
+// GET /api/tasks/feed - publicly visible tasks, random sample up to 28.
 // Must be registered before /:id so the param doesn't swallow 'feed'.
+const FEED_LIMIT = 28;
+
 router.get("/feed", async (req, res) => {
   if (!req.session.userId)
     return res.status(401).json({ error: "Not logged in." });
 
-  const limit = Math.min(parseInt(req.query.limit) || 30, 60);
+  const limit = FEED_LIMIT;
 
   const Profile = mongoose.model("Profile");
   const StudyRoom = mongoose.model("StudyRoom");

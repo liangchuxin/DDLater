@@ -1,16 +1,158 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
-  imageToGrid,
+  imageToRawGrid,
   autoRemoveBackground,
   renderStatic,
   startAnimation,
   defaultCuts,
   DEFAULT_ANIM_CONFIG,
+  DEFAULT_BG_TOLERANCE,
+  MIN_BG_TOLERANCE,
+  MAX_BG_TOLERANCE,
+  BG_TOLERANCE_STEP,
 } from "../utils/pixelChar";
 import { useConfirm } from "./ConfirmModal";
+import PixelGridEditor from "./PixelGridEditor";
 import "../styles/AvatarStudio.css";
 
 const API = import.meta.env.VITE_API_URL;
+const ACCEPTED_IMAGE_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+]);
+
+function isAcceptedImageFile(file) {
+  if (!file) return false;
+  if (ACCEPTED_IMAGE_TYPES.has(file.type)) return true;
+  return /\.(png|jpe?g|webp|gif)$/i.test(file.name);
+}
+
+function readImageFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("Could not read that file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function AvatarUploadZone({ imageSrc, onImageLoad, onReject }) {
+  const inputRef = useRef(null);
+  const dragDepthRef = useRef(0);
+  const [dragState, setDragState] = useState("idle"); // idle | over | reject
+
+  const applyFile = useCallback(
+    async (file) => {
+      if (!isAcceptedImageFile(file)) {
+        setDragState("reject");
+        onReject?.("Please upload a PNG, JPG, WebP, or GIF image.");
+        window.setTimeout(() => setDragState("idle"), 700);
+        return;
+      }
+      try {
+        const dataUrl = await readImageFileAsDataUrl(file);
+        onImageLoad(dataUrl);
+        setDragState("idle");
+      } catch {
+        onReject?.("Could not read that file.");
+      }
+    },
+    [onImageLoad, onReject],
+  );
+
+  const hasFiles = (dt) => dt?.types?.includes("Files");
+
+  const isDragAcceptable = (dt) => {
+    const item = dt?.items?.[0];
+    if (!item || item.kind !== "file") return true;
+    if (!item.type) return true;
+    return ACCEPTED_IMAGE_TYPES.has(item.type);
+  };
+
+  const onDragEnter = (e) => {
+    if (!hasFiles(e.dataTransfer)) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setDragState(isDragAcceptable(e.dataTransfer) ? "over" : "reject");
+  };
+
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragState("idle");
+  };
+
+  const onDragOver = (e) => {
+    if (!hasFiles(e.dataTransfer)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = isDragAcceptable(e.dataTransfer) ? "copy" : "none";
+  };
+
+  const onDrop = (e) => {
+    if (!hasFiles(e.dataTransfer)) return;
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    const file = e.dataTransfer.files?.[0];
+    applyFile(file);
+  };
+
+  const onInputChange = (e) => {
+    const file = e.target.files?.[0];
+    applyFile(file);
+    e.target.value = "";
+  };
+
+  const openPicker = () => inputRef.current?.click();
+
+  const zoneClass = [
+    "as-upload-zone",
+    dragState === "over" ? "is-drag-over" : "",
+    dragState === "reject" ? "is-drag-reject" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div
+      className={zoneClass}
+      onClick={openPicker}
+      onDragEnter={onDragEnter}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openPicker();
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload pixel character image"
+    >
+      {imageSrc ? (
+        <img src={imageSrc} alt="Uploaded character source" />
+      ) : (
+        <span className="as-upload-hint">
+          Click to upload your pixel character image
+          <br />
+          (PNG / JPG)
+        </span>
+      )}
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif,.png,.jpg,.jpeg,.webp,.gif"
+        ref={inputRef}
+        onChange={onInputChange}
+        className="as-upload-input"
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
 
 // Small canvas preview for thumbnails in the list
 function AvatarThumb({ grid, size = 80 }) {
@@ -35,7 +177,9 @@ function AvatarAnimPreview({ grid, cuts, size = 180 }) {
 
 export default function AvatarStudio() {
   const [imageSrc, setImageSrc] = useState(null);
+  const [rawGrid, setRawGrid] = useState(null);
   const [grid, setGrid] = useState(null);
+  const [bgTolerance, setBgTolerance] = useState(DEFAULT_BG_TOLERANCE);
   const [cuts, setCuts] = useState(null);
   const [name, setName] = useState("My Character");
   const [msg, setMsg] = useState("");
@@ -43,12 +187,28 @@ export default function AvatarStudio() {
   const [isSaving, setIsSaving] = useState(false);
   const [avatars, setAvatars] = useState([]);
   const [activeAvatarId, setActiveAvatarId] = useState(null);
+  const [editSession, setEditSession] = useState(0);
 
-  const fileInputRef = useRef(null);
   const staticCanvasRef = useRef(null);
   const hiddenCanvasRef = useRef(null);
 
   const { confirm, modal: confirmModal } = useConfirm();
+
+  const handleImageLoad = useCallback((dataUrl) => {
+    setImageSrc(dataUrl);
+    setRawGrid(null);
+    setGrid(null);
+    setCuts(null);
+    setBgTolerance(DEFAULT_BG_TOLERANCE);
+    setEditSession(0);
+    setMsg("");
+    setIsError(false);
+  }, []);
+
+  const handleUploadReject = useCallback((message) => {
+    setMsg(message);
+    setIsError(true);
+  }, []);
 
   // Load existing avatars
   const loadAvatars = useCallback(async () => {
@@ -68,36 +228,30 @@ export default function AvatarStudio() {
     }
   }, [grid]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setImageSrc(ev.target.result);
-      setGrid(null);
-      setCuts(null);
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
   const handleProcess = () => {
     if (!imageSrc) return;
     const img = new Image();
     img.onload = () => {
-      const newGrid = imageToGrid(img);
-      const newCuts = defaultCuts(newGrid.length);
-      setGrid(newGrid);
-      setCuts(newCuts);
+      const extracted = imageToRawGrid(img);
+      setRawGrid(extracted);
+      setBgTolerance(DEFAULT_BG_TOLERANCE);
+      setCuts(defaultCuts(extracted.length));
     };
     img.src = imageSrc;
   };
 
-  const handleRemoveBg = () => {
-    if (!grid) return;
-    const newGrid = autoRemoveBackground(grid, 40);
-    setGrid(newGrid);
+  const adjustBgTolerance = (delta) => {
+    setBgTolerance((prev) => {
+      const next = prev + delta;
+      return Math.min(MAX_BG_TOLERANCE, Math.max(MIN_BG_TOLERANCE, next));
+    });
   };
+
+  useEffect(() => {
+    if (!rawGrid) return;
+    setGrid(autoRemoveBackground(rawGrid, bgTolerance));
+    setEditSession((n) => n + 1);
+  }, [rawGrid, bgTolerance]);
 
   const handleSave = async () => {
     if (!grid || !cuts) return;
@@ -120,7 +274,9 @@ export default function AvatarStudio() {
       setMsg("Saved and set as active.");
       setIsError(false);
       setGrid(null);
+      setRawGrid(null);
       setCuts(null);
+      setBgTolerance(DEFAULT_BG_TOLERANCE);
       setImageSrc(null);
       setName("My Character");
       loadAvatars();
@@ -169,23 +325,45 @@ export default function AvatarStudio() {
         <div className="as-wrap">
           {/* Left column */}
           <div className="as-left">
-            {/* Upload zone */}
-            <div className="as-upload-zone" onClick={() => fileInputRef.current?.click()}>
-              {imageSrc
-                ? <img src={imageSrc} alt="source" />
-                : <span className="as-upload-hint">Click to upload your pixel character image<br />(PNG / JPG)</span>
-              }
-              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} style={{ display: "none" }} />
-            </div>
+            <AvatarUploadZone
+              imageSrc={imageSrc}
+              onImageLoad={handleImageLoad}
+              onReject={handleUploadReject}
+            />
 
             <div className="as-actions">
               <button className="as-btn as-btn-primary" onClick={handleProcess} disabled={!imageSrc}>
                 Process image
               </button>
-              <button className="as-btn as-btn-ghost" onClick={handleRemoveBg} disabled={!grid}>
-                Remove background again
-              </button>
             </div>
+
+            {rawGrid && (
+              <div className="as-bg-control">
+                <span className="as-bg-control-label">Background removal</span>
+                <div className="as-bg-control-stepper">
+                  <button
+                    type="button"
+                    className="as-btn as-btn-ghost as-bg-step-btn"
+                    onClick={() => adjustBgTolerance(-BG_TOLERANCE_STEP)}
+                    disabled={bgTolerance <= MIN_BG_TOLERANCE}
+                    aria-label="Reduce background removal"
+                  >
+                    −
+                  </button>
+                  <span className="as-bg-control-value">{bgTolerance}</span>
+                  <button
+                    type="button"
+                    className="as-btn as-btn-ghost as-bg-step-btn"
+                    onClick={() => adjustBgTolerance(BG_TOLERANCE_STEP)}
+                    disabled={bgTolerance >= MAX_BG_TOLERANCE}
+                    aria-label="Increase background removal"
+                  >
+                    +
+                  </button>
+                </div>
+                <span className="as-bg-control-hint">0 = off · lower keeps more · higher removes more · resets manual edits</span>
+              </div>
+            )}
 
             {/* Preview */}
             {grid && (
@@ -200,6 +378,8 @@ export default function AvatarStudio() {
                     <AvatarAnimPreview grid={grid} cuts={cuts} size={180} />
                   </div>
                 </div>
+
+                <PixelGridEditor key={editSession} grid={grid} onGridChange={setGrid} />
 
                 <div className="as-name-row">
                   <input

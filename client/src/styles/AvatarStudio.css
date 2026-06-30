@@ -21,19 +21,34 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
   gap: 10px;
   padding: 28px;
+  outline: none;
 }
-.as-upload-zone:hover {
+.as-upload-zone:hover,
+.as-upload-zone:focus-visible {
   border-color: var(--green);
   background: var(--greenbg);
+}
+.as-upload-zone.is-drag-over {
+  border-color: var(--green);
+  background: var(--greenbg);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+.as-upload-zone.is-drag-reject {
+  border-color: var(--red);
+  background: var(--redbg);
+}
+.as-upload-input {
+  display: none;
 }
 .as-upload-zone img {
   max-height: 140px;
   max-width: 100%;
   object-fit: contain;
   image-rendering: pixelated;
+  pointer-events: none;
 }
 .as-upload-hint {
   font-family: "DM Mono", monospace;
@@ -41,6 +56,8 @@
   color: var(--muted);
   letter-spacing: 0.06em;
   text-align: center;
+  line-height: 1.5;
+  pointer-events: none;
 }
 
 .as-preview-row {
@@ -74,6 +91,48 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.as-bg-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--bg3);
+  background: var(--paper);
+}
+.as-bg-control-label {
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+}
+.as-bg-control-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.as-bg-step-btn {
+  min-width: 36px;
+  padding: 6px 10px;
+  font-size: 16px;
+  line-height: 1;
+}
+.as-bg-control-value {
+  min-width: 2.5ch;
+  font-family: "DM Mono", monospace;
+  font-size: 14px;
+  text-align: center;
+  color: var(--ink);
+}
+.as-bg-control-hint {
+  flex: 1 1 100%;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-transform: uppercase;
 }
 
 .as-name-row {

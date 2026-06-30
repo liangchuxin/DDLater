@@ -1,0 +1,179 @@
+.pge-wrap {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.pge-canvas-box {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.pge-canvas {
+  touch-action: none;
+  cursor: crosshair;
+  image-rendering: pixelated;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.pge-canvas.is-picking {
+  cursor: cell;
+}
+
+.pge-hint {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.pge-tools {
+  flex: 0 0 200px;
+  width: 200px;
+  background: var(--paper);
+  border: 1.5px solid var(--bg3);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pge-tools-head {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--bg3);
+}
+
+.pge-current-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pge-swatch {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid var(--bg3);
+  background: var(--paper);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.pge-swatch:hover {
+  border-color: var(--green);
+}
+
+.pge-swatch.is-active,
+.pge-swatch-current {
+  border-color: var(--green);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+
+.pge-color-picker {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.pge-color-picker input[type="color"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pge-hex {
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  text-transform: uppercase;
+}
+
+.pge-tool-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pge-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 10px;
+  font-family: "DM Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  border: 1.5px solid var(--bg3);
+  background: var(--bg2);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.pge-tool-btn:hover:not(:disabled) {
+  background: var(--bg3);
+}
+
+.pge-tool-btn.is-active {
+  border-color: var(--green);
+  background: var(--greenbg);
+  color: var(--green);
+}
+
+.pge-tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pge-undo-btn {
+  flex: 1 1 100%;
+}
+
+.pge-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pge-recent-label {
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pge-recent-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pge-recent-swatches .pge-swatch {
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 720px) {
+  .pge-tools {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
