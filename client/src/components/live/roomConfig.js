@@ -6,6 +6,9 @@
 export const CANVAS_REF_W = 1435;
 export const CANVAS_REF_H = 722;
 export const CHAR_REF_H = 235;
+export const CHAR_COLS = 26;
+// Standard avatar width at reference scale (CHAR_COLS * cell size for M_APPROX rows).
+export const CHAR_REF_W = 182;
 export const M_APPROX = 30; // pixelChar grid rows (approx; used for sofa leg-clip height estimate)
 
 // Camera: draggable world

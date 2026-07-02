@@ -18,7 +18,7 @@ const SEED = [
       imgBottom: -91,                             // desk image bottom relative to canvas bottom
       imgWidth: 328,                              // desk image width
       charHalfGap: 90,                            // half distance between the two seat centers
-      charBottom: 40,                             // character bottom relative to canvas bottom
+      charBottom: 47,                             // character bottom relative to canvas bottom (+1 pixel cell)
       charWidth: 161,                             // width per character
     },
   },
@@ -36,6 +36,7 @@ const SEED = [
       bedOffsetY: 100,
       charWidth: 165,
       charOffsetX: 50,
+      charOffsetY: 0,
       charRotation: -90,
       bottom: -40,                                // container bottom relative to canvas bottom
       sideInset: 360,                             // container center distance from nearest canvas edge
@@ -53,7 +54,7 @@ const SEED = [
       bagWidth: 260,
       bagHeight: 200,
       bagOffsetY: 20,
-      charOffsetX: 90,
+      charOffsetX: 62,
       charRotation: -29,
       charBottom: -20,
       sideInset: 260,

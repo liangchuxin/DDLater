@@ -9,10 +9,11 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import PixelBox from "./PixelBox";
 import RoomScene from "./live/RoomScene";
+import SeatInviteBanner from "./live/SeatInviteBanner";
+import SceneToolbar from "./live/SceneToolbar";
 import { Avatar, SelfPanel, MemberPanel, OverallPanel } from "./live/Panels";
 import {
   CANVAS_REF_H,
-  CHAR_REF_H,
   WORLD_SCALE,
   SIDE_MIN_FROM_CENTER,
   BG_SRC,
@@ -22,8 +23,7 @@ import {
 } from "./live/roomConfig";
 import {
   getDominantColor,
-  generateSeats,
-  extendSeats,
+  buildLayoutFromRoom,
   sideCenterX,
 } from "./live/liveUtils";
 import { useRoomSocket, useSocketEvent } from "../hooks/useSocket";
@@ -33,12 +33,23 @@ import "../styles/Live.css";
 
 const API = import.meta.env.VITE_API_URL;
 
+const SWAP_EPHEMERAL_EVENTS = new Set([
+  "seat_swap_request",
+  "seat_swap_declined",
+  "seat_swap_expired",
+  "seat_swap_accepted",
+]);
+
 export default function Live() {
   const { uid: roomUid } = useParams();
   const navigate = useNavigate();
 
   // Selection
   const [selected, setSelected] = useState("self");
+  const [sceneTargetUserId, setSceneTargetUserId] = useState(null);
+  const [scenePendingUserId, setScenePendingUserId] = useState(null);
+  const [incomingSeatInvite, setIncomingSeatInvite] = useState(null);
+  const [changingFurniture, setChangingFurniture] = useState(false);
 
   // Current auth user
   const [self, setSelf] = useState(null);
@@ -64,9 +75,9 @@ export default function Live() {
 
   // Scene data
   const [furnitures, setFurnitures] = useState([]);
-  const [seats, setSeats] = useState(null);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const sceneRef = useRef(null);
+  const seatMigrateRef = useRef(false);
 
   // Camera
   const [cameraX, setCameraX] = useState(0);
@@ -116,6 +127,7 @@ export default function Live() {
   }, [roomUid]);
 
   useEffect(() => {
+    seatMigrateRef.current = false;
     setRoom(null);
     setRoomError(null);
     setEvents([]);
@@ -127,6 +139,19 @@ export default function Live() {
       .catch((e) => setRoomError(e.message));
     refetchEvents().catch(() => {});
   }, [roomUid, refetchRoom, refetchEvents]);
+
+  // Legacy rooms may load before seats are migrated; one refetch after GET ensure.
+  useEffect(() => {
+    if (!room?.members?.length || !self || seatMigrateRef.current) return;
+    const missingSeat = room.members.some(
+      (m) => !m.seat?.placement || !m.seat?.furnitureKey,
+    );
+    if (!missingSeat) return;
+    seatMigrateRef.current = true;
+    refetchRoom()
+      .then(setRoom)
+      .catch(() => {});
+  }, [room, self, refetchRoom]);
 
   // Session timer: tick each second. Null sessionStartAt means no active session.
   useEffect(() => {
@@ -147,6 +172,48 @@ export default function Live() {
   //   2. If the event changes member/task state, refetch room
   const handleRoomEvent = useCallback(
     (event) => {
+      if (SWAP_EPHEMERAL_EVENTS.has(event.type)) {
+        if (
+          event.type === "seat_swap_request" &&
+          self &&
+          String(event.payload?.targetUserId) === String(self._id)
+        ) {
+          setIncomingSeatInvite({
+            fromUserId: event.actor?._id,
+            fromName: event.actor?.displayName ?? "Someone",
+          });
+        }
+
+        if (
+          (event.type === "seat_swap_declined" ||
+            event.type === "seat_swap_expired") &&
+          self &&
+          String(event.payload?.requesterUserId) === String(self._id)
+        ) {
+          setScenePendingUserId(null);
+          setSceneTargetUserId(null);
+        }
+
+        if (
+          event.type === "seat_swap_expired" &&
+          self &&
+          String(event.payload?.inviteeUserId) === String(self._id)
+        ) {
+          setIncomingSeatInvite(null);
+        }
+
+        if (event.type === "seat_swap_accepted") {
+          setScenePendingUserId(null);
+          setSceneTargetUserId(null);
+          setIncomingSeatInvite(null);
+          refetchRoom()
+            .then(setRoom)
+            .catch(() => {});
+        }
+
+        return;
+      }
+
       // Admin-only events are broadcast to everyone; filter client-side.
       const adminOnly = [
         "join_request",
@@ -168,13 +235,14 @@ export default function Live() {
         "task_progress",
         "join_request", // pendingMembers changed
         "join_rejected", // pendingMembers changed; without refetch other admins' buttons won't disappear
+        "seat_change",
       ].includes(event.type);
       if (needsRefetch)
         refetchRoom()
           .then(setRoom)
           .catch(() => {});
     },
-    [isAdmin, refetchRoom],
+    [isAdmin, refetchRoom, self],
   );
   const handlePresence = useCallback(({ online }) => {
     setOnlineUserIds(online ?? []);
@@ -290,6 +358,14 @@ export default function Live() {
     return { members: others, roomTasks: myTasks };
   }, [room, self]);
 
+  const selfSeat = useMemo(() => {
+    if (!room?.members || !self) return null;
+    const me = room.members.find(
+      (m) => String(m.user?._id ?? m.user) === String(self._id),
+    );
+    return me?.seat ?? null;
+  }, [room, self]);
+
   // Background setup.
   // room.background stores filename + offsets; use fallback if room not ready or legacy doc.
   const bg = useMemo(() => {
@@ -375,8 +451,7 @@ export default function Live() {
     const target = sceneRef.current.parentElement;
     if (!target) return;
     const { width, height } = target.getBoundingClientRect();
-    if (height > 0)
-      setCanvasSize({ w: Math.round(width), h: Math.round(height) });
+    if (height > 0) setCanvasSize({ w: width, h: height });
   }, [self, room]);
 
   useEffect(() => {
@@ -385,55 +460,73 @@ export default function Live() {
     if (!target) return;
     const obs = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
-      setCanvasSize({ w: Math.round(width), h: Math.round(height) });
+      setCanvasSize({ w: width, h: height });
     });
     obs.observe(target);
     return () => obs.disconnect();
   }, [self, room]);
 
-  // Seat assignment.
-  // First run calls generateSeats. Later, as members grow, extendSeats adds seats
-  // incrementally so existing seats stay put (regenerate would shuffle everyone).
-  useEffect(() => {
-    if (!furnitures.length || !self || !room) return;
-    const allowedKeys =
-      room.furnitures?.length > 0 ? new Set(room.furnitures) : null;
-    const pool = allowedKeys
-      ? furnitures.filter((f) => allowedKeys.has(f.key))
-      : furnitures;
-    const count = 1 + members.length;
-    if (!seats) {
-      const s = generateSeats(count, pool);
-      if (s.length > 0) setSeats(s);
-    } else if (count > seats.length) {
-      // New member joined: extend
-      setSeats(extendSeats(seats, count, pool));
-    } else if (count < seats.length) {
-      // Someone left: regenerate. It's fine if seats shuffle here.
-      setSeats(generateSeats(count, pool));
-    }
-  }, [furnitures, self, room, members.length, seats]);
+  // Seat assignment comes from server-persisted room.members[].seat (stable across refresh).
+  const allowedFurnitureKeys = useMemo(() => {
+    if (!room) return [];
+    if (room.furnitures?.length > 0) return room.furnitures;
+    return furnitures.map((f) => f.key);
+  }, [room, furnitures]);
+
+  // Tag each member with isOnline so the scene can dim offline avatars.
+  const allMembersForScene = useMemo(() => {
+    if (!self) return [];
+    const onlineSet = new Set(onlineUserIds.map(String));
+    const selfOnline = onlineSet.has(String(self._id));
+    return [
+      {
+        ...self,
+        isSelf: true,
+        activeAvatar: selfProfile?.activeAvatar,
+        isOnline: selfOnline,
+      },
+      ...members.map((m) => ({
+        ...m,
+        isSelf: false,
+        isOnline: onlineSet.has(String(m.userId)),
+      })),
+    ];
+  }, [self, selfProfile, members, onlineUserIds]);
+
+  const layout = useMemo(() => {
+    if (!room?.members || !furnitures.length || !self) return [];
+    const ownerId = String(room.owner?._id ?? room.owner);
+    return buildLayoutFromRoom(
+      room.members,
+      allMembersForScene,
+      furnitures,
+      ownerId,
+      allowedFurnitureKeys,
+    );
+  }, [room, furnitures, self, allMembersForScene, allowedFurnitureKeys]);
 
   // Focus camera on selection change
   useEffect(() => {
-    if (!canvasSize.w || !seats) return;
+    if (!canvasSize.w || !layout.length) return;
     const k = canvasSize.h / CANVAS_REF_H;
     const sideMin = SIDE_MIN_FROM_CENTER * k;
 
-    let targetIdx = null;
-    if (selected === "self") targetIdx = 0;
-    else if (selected === "overall") targetIdx = null;
-    else {
-      const found = members.findIndex((m) => m.uid === selected);
-      if (found >= 0) targetIdx = found + 1;
+    let targetUserId = null;
+    if (selected === "self") targetUserId = String(self._id);
+    else if (selected !== "overall") {
+      const found = members.find((m) => m.uid === selected);
+      if (found) targetUserId = String(found.userId);
     }
 
     let targetCanvasX = canvasSize.w / 2;
-    if (targetIdx != null) {
-      const seat = seats.find((s) => s.memberIdx === targetIdx);
+    if (targetUserId) {
+      const seat = layout.find((s) => s.userId === targetUserId);
       if (seat) {
         if (seat.position === "center") {
-          const halfGap = seat.furniture.layout.charHalfGap * k;
+          const deskLayout =
+            furnitures.find((f) => f.key === "desk")?.layout ??
+            seat.furniture.layout;
+          const halfGap = deskLayout.charHalfGap * k;
           targetCanvasX =
             canvasSize.w / 2 + (seat.slotIndex === 0 ? -halfGap : halfGap);
         } else {
@@ -449,7 +542,97 @@ export default function Live() {
     }
     setCameraX(clampCamera(canvasSize.w / 2 - targetCanvasX));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected, canvasSize.w, canvasSize.h, seats, members]);
+  }, [selected, canvasSize.w, canvasSize.h, layout, members, furnitures, self]);
+
+  const onSceneTargetSelect = useCallback(
+    (userId) => {
+      setSceneTargetUserId(userId);
+      if (!userId) {
+        setScenePendingUserId(null);
+        return;
+      }
+      const member = members.find((m) => String(m.userId) === String(userId));
+      if (member) setSelected(member.uid);
+    },
+    [members],
+  );
+
+  const onSceneAction = useCallback(
+    async (entry, slotId) => {
+      if (slotId !== 1 || !room?._id) return;
+      setScenePendingUserId(entry.userId);
+      try {
+        const r = await fetch(`${API}/api/rooms/${room._id}/seat/swap/request`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetUserId: entry.userId }),
+        });
+        if (!r.ok) {
+          setScenePendingUserId(null);
+          const data = await r.json().catch(() => ({}));
+          alert(data.error || "Could not send swap request.");
+        }
+      } catch {
+        setScenePendingUserId(null);
+        alert("Could not send swap request.");
+      }
+    },
+    [room],
+  );
+
+  const onScenePendingTimeout = useCallback(() => {
+    setScenePendingUserId(null);
+    setSceneTargetUserId(null);
+  }, []);
+
+  const onSeatInviteAccept = useCallback(async () => {
+    if (!incomingSeatInvite?.fromUserId || !room?._id) return;
+    try {
+      const r = await fetch(`${API}/api/rooms/${room._id}/seat/swap/accept`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromUserId: incomingSeatInvite.fromUserId }),
+      });
+      setIncomingSeatInvite(null);
+      if (r.ok) {
+        const fresh = await refetchRoom();
+        setRoom(fresh);
+      } else {
+        const data = await r.json().catch(() => ({}));
+        alert(data.error || "Could not accept swap.");
+      }
+    } catch {
+      setIncomingSeatInvite(null);
+      alert("Could not accept swap.");
+    }
+  }, [incomingSeatInvite, room, refetchRoom]);
+
+  const onSeatInviteDecline = useCallback(async () => {
+    if (!incomingSeatInvite?.fromUserId || !room?._id) return;
+    try {
+      await fetch(`${API}/api/rooms/${room._id}/seat/swap/decline`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromUserId: incomingSeatInvite.fromUserId }),
+      });
+    } catch {
+      // still dismiss locally
+    }
+    setIncomingSeatInvite(null);
+  }, [incomingSeatInvite, room]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return undefined;
+    window.__previewSeatInvite = (fromName = "Mika") => {
+      setIncomingSeatInvite({ fromUserId: "preview", fromName });
+    };
+    return () => {
+      delete window.__previewSeatInvite;
+    };
+  }, []);
 
   // Drag gesture
   const onScenePointerDown = (e) => {
@@ -473,46 +656,17 @@ export default function Live() {
     setCameraX(clampCamera(d.startCameraX + dx));
   };
   const onScenePointerUp = (e) => {
+    const moved = dragRef.current.moved;
     dragRef.current.active = false;
     setIsDragging(false);
+    if (!moved) setSceneTargetUserId(null);
     try {
       e.currentTarget.releasePointerCapture?.(e.pointerId);
     } catch (_) {}
   };
 
-  // Derived: scene layout.
-  // Tag each member with isOnline so the scene can dim offline avatars.
-  const allMembersForScene = useMemo(() => {
-    if (!self) return [];
-    const onlineSet = new Set(onlineUserIds.map(String));
-    const selfOnline = onlineSet.has(String(self._id));
-    return [
-      {
-        ...self,
-        isSelf: true,
-        activeAvatar: selfProfile?.activeAvatar,
-        isOnline: selfOnline,
-      },
-      ...members.map((m) => ({
-        ...m,
-        isSelf: false,
-        // m.userId is User._id; m._id is Profile._id. Presence keys by User._id.
-        isOnline: onlineSet.has(String(m.userId)),
-      })),
-    ];
-  }, [self, selfProfile, members, onlineUserIds]);
-
-  const layout = useMemo(() => {
-    if (!seats) return [];
-    return seats
-      .map((s) => ({ ...s, member: allMembersForScene[s.memberIdx] }))
-      .filter((s) => s.member);
-  }, [seats, allMembersForScene]);
-
-  const charH =
-    canvasSize.h > 0
-      ? Math.round((CHAR_REF_H * canvasSize.h) / CANVAS_REF_H)
-      : CHAR_REF_H;
+  const sceneScale =
+    canvasSize.h > 0 ? canvasSize.h / CANVAS_REF_H : 1;
 
   // Panel data
   const allMembers = self
@@ -549,6 +703,25 @@ export default function Live() {
     if (r.ok) {
       const fresh = await refetchRoom();
       setRoom(fresh);
+    }
+  };
+
+  const onFurnitureChange = async (furnitureKey) => {
+    if (!room?._id || changingFurniture) return;
+    setChangingFurniture(true);
+    try {
+      const r = await fetch(`${API}/api/rooms/${room._id}/member/seat`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ furnitureKey }),
+      });
+      if (r.ok) {
+        const fresh = await refetchRoom();
+        setRoom(fresh);
+      }
+    } finally {
+      setChangingFurniture(false);
     }
   };
 
@@ -648,33 +821,56 @@ export default function Live() {
 
         <div className="live-stage">
           <PixelBox variant="retro" className="live-canvas">
-            <div
-              ref={sceneRef}
-              onPointerDown={onScenePointerDown}
-              onPointerMove={onScenePointerMove}
-              onPointerUp={onScenePointerUp}
-              onPointerCancel={onScenePointerUp}
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "100%",
-                overflow: "hidden",
-                cursor: isDragging ? "grabbing" : "grab",
-                userSelect: "none",
-                touchAction: "pan-y",
-              }}
-            >
-              {seats && (
-                <RoomScene
-                  layout={layout}
-                  canvasW={canvasSize.w}
-                  canvasH={canvasSize.h}
-                  charH={charH}
-                  cameraX={cameraX}
-                  isDragging={isDragging}
-                  bg={bg}
+            <div className="live-canvas-stack">
+              <div className="live-canvas-ui">
+                <SceneToolbar
+                  furnitures={furnitures}
+                  allowedFurnitureKeys={allowedFurnitureKeys}
+                  currentFurnitureKey={selfSeat?.furnitureKey}
+                  placement={selfSeat?.placement}
+                  onFurnitureChange={onFurnitureChange}
+                  changingFurniture={changingFurniture}
                 />
-              )}
+                {incomingSeatInvite && (
+                  <SeatInviteBanner
+                    fromName={incomingSeatInvite.fromName}
+                    onAccept={onSeatInviteAccept}
+                    onDecline={onSeatInviteDecline}
+                  />
+                )}
+              </div>
+              <div
+                ref={sceneRef}
+                className="live-canvas-scene"
+                onPointerDown={onScenePointerDown}
+                onPointerMove={onScenePointerMove}
+                onPointerUp={onScenePointerUp}
+                onPointerCancel={onScenePointerUp}
+                style={{
+                  cursor: isDragging ? "grabbing" : "grab",
+                  userSelect: "none",
+                  touchAction: "pan-y",
+                }}
+              >
+                {canvasSize.h > 0 && (
+                  <RoomScene
+                    layout={layout}
+                    furnitures={furnitures}
+                    canvasW={canvasSize.w}
+                    canvasH={canvasSize.h}
+                    sceneScale={sceneScale}
+                    cameraX={cameraX}
+                    isDragging={isDragging}
+                    bg={bg}
+                    selfUserId={self._id}
+                    sceneTargetUserId={sceneTargetUserId}
+                    scenePendingUserId={scenePendingUserId}
+                    onSelectTarget={onSceneTargetSelect}
+                    onAction={onSceneAction}
+                    onPendingTimeout={onScenePendingTimeout}
+                  />
+                )}
+              </div>
             </div>
           </PixelBox>
 

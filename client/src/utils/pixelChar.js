@@ -152,6 +152,27 @@ export function defaultCuts(M) {
   return [cutA, cutB, cutC];
 }
 
+/** Canvas pixel size for a grid at maxSize (matches startAnimation layout math). */
+export function avatarCanvasDimensions(
+  grid,
+  maxSize = 260,
+  clipBottomRows = 0,
+  amp = DEFAULT_ANIM_CONFIG.amp,
+) {
+  const M = grid.length;
+  const N = grid[0]?.length ?? 0;
+  if (!M || !N) return { w: 0, h: 0, fullH: 0, cs: 1 };
+  const effectiveM =
+    clipBottomRows > 0 ? Math.min(M, M - clipBottomRows) : M;
+  const cs = Math.max(1, Math.floor(maxSize / Math.max(N, M)));
+  return {
+    w: N * cs,
+    h: (effectiveM + amp * 2 + 4) * cs,
+    fullH: (M + amp * 2 + 4) * cs,
+    cs,
+  };
+}
+
 export function randomizeAnimConfig(base, jitter = 0.3) {
   const rand = (v) => Math.max(1, Math.round(v * (1 + (Math.random() * 2 - 1) * jitter)));
   return {

@@ -1,6 +1,20 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import { customAlphabet } from 'nanoid';
+import {
+  assignOwnerSeat,
+  assignSeatForJoin,
+  ensureAllMemberSeats,
+  getAllowedFurnitureKeys,
+  reconcileMemberSeats,
+  swapMemberSeats,
+} from '../seatUtils.mjs';
+import {
+  clearPendingSwap,
+  createPendingSwap,
+  getPendingSwap,
+  SWAP_TTL_MS,
+} from '../seatSwapStore.mjs';
 
 const router = express.Router();
 const StudyRoom = mongoose.model('StudyRoom');
@@ -54,6 +68,51 @@ function broadcast(req, roomDoc, event) {
   io.to(`room:${roomDoc.uid}`).emit('room-event', event);
 }
 
+function notifyUser(req, userId, event) {
+  const io = req.app?.get('io');
+  if (!io) return;
+  io.to(`user:${userId}`).emit('room-event', event);
+}
+
+async function buildEphemeralEvent(type, actorId, payload = {}) {
+  const profile = await Profile.findOne(
+    { user: actorId },
+    'user displayName avatar uid',
+  );
+  return {
+    type,
+    payload,
+    ephemeral: true,
+    createdAt: new Date(),
+    actor: profile
+      ? {
+          _id: actorId,
+          uid: profile.uid,
+          displayName: profile.displayName,
+          avatar: profile.avatar,
+        }
+      : { _id: actorId },
+  };
+}
+
+function emitSwapExpired(app, { fromUserId, toUserId }) {
+  const io = app?.get('io');
+  if (!io) return;
+  const base = { ephemeral: true, createdAt: new Date() };
+  io.to(`user:${fromUserId}`).emit('room-event', {
+    ...base,
+    type: 'seat_swap_expired',
+    payload: { requesterUserId: fromUserId },
+    actor: { _id: fromUserId },
+  });
+  io.to(`user:${toUserId}`).emit('room-event', {
+    ...base,
+    type: 'seat_swap_expired',
+    payload: { inviteeUserId: toUserId },
+    actor: { _id: fromUserId },
+  });
+}
+
 // Attach actor profile (displayName / avatar / uid) to an event for rendering.
 async function populateEvent(ev) {
   const profile = await Profile.findOne(
@@ -95,6 +154,13 @@ router.get('/', async (req, res) => {
       populate: { path: 'course' },
     });
 
+  for (const room of rooms) {
+    if (reconcileMemberSeats(room)) {
+      room.markModified('members');
+      await room.save();
+    }
+  }
+
   const allUserIds = [...new Set(rooms.flatMap((r) => r.members.map((m) => m.user._id.toString())))];
   const profiles = await Profile.find(
     { user: { $in: allUserIds } },
@@ -124,7 +190,7 @@ router.post('/', async (req, res) => {
     uid,
     name,
     owner: req.session.userId,
-    members: [{ user: req.session.userId, tasks: [] }],
+    members: [{ user: req.session.userId, tasks: [], seat: assignOwnerSeat() }],
     pendingMembers: [],
     ...(background ? { background } : {}),
     ...(furnitures ? { furnitures } : {}),
@@ -186,6 +252,11 @@ router.get('/:id', async (req, res) => {
       // Room seats max 4 (desk 2 + side 2). When full, frontend enters 'full' state.
       isFull: room.members.length >= 4,
     });
+  }
+
+  if (reconcileMemberSeats(room)) {
+    room.markModified('members');
+    await room.save();
   }
 
   const userIds = room.members.map((m) => m.user._id);
@@ -268,7 +339,13 @@ router.post('/:id/approve/:userId', async (req, res) => {
     return res.status(404).json({ error: 'User not in pending list.' });
 
   room.pendingMembers.splice(pendingIdx, 1);
-  room.members.push({ user: req.params.userId, tasks: [] });
+  const allowed = getAllowedFurnitureKeys(room);
+  const seat = assignSeatForJoin(room.members, allowed);
+  room.members.push({
+    user: req.params.userId,
+    tasks: [],
+    seat: seat ?? { placement: 'side-right', furnitureKey: allowed[0] ?? 'desk' },
+  });
   await room.save();
 
   // Mark the related join_request as resolved so the Approve button hides.
@@ -350,6 +427,155 @@ router.post('/:id/member/tasks', async (req, res) => {
   broadcast(req, room, ev);
 
   return res.json({ message: 'Task added to room.' });
+});
+
+// PATCH /api/rooms/:id/member/seat - change own furniture (placement stays fixed)
+router.patch('/:id/member/seat', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+  const { furnitureKey } = req.body;
+  if (!furnitureKey) return res.status(400).json({ error: 'furnitureKey is required.' });
+
+  const room = await findRoom(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Room not found.' });
+
+  const member = room.members.find((m) => m.user.equals(req.session.userId));
+  if (!member) return res.status(403).json({ error: 'Not a member of this room.' });
+
+  const allowed = getAllowedFurnitureKeys(room);
+  if (!allowed.includes(furnitureKey)) {
+    return res.status(400).json({ error: 'Furniture not allowed in this room.' });
+  }
+
+  if (!member.seat?.placement) {
+    const isOwner = String(member.user) === String(room.owner);
+    member.seat = isOwner ? assignOwnerSeat() : assignSeatForJoin(room.members, allowed);
+  }
+
+  member.seat.furnitureKey = furnitureKey;
+  await room.save();
+
+  const ev = await emitEvent(room, 'seat_change', req.session.userId, {
+    furnitureKey,
+    placement: member.seat.placement,
+  });
+  broadcast(req, room, ev);
+
+  return res.json({ message: 'Seat updated.', seat: member.seat });
+});
+
+// POST /api/rooms/:id/seat/swap/request — invite another member to swap seats (ephemeral, not history)
+router.post('/:id/seat/swap/request', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+  const { targetUserId } = req.body;
+  if (!targetUserId) return res.status(400).json({ error: 'targetUserId is required.' });
+  if (String(targetUserId) === String(req.session.userId)) {
+    return res.status(400).json({ error: 'Cannot swap with yourself.' });
+  }
+
+  const room = await findRoom(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Room not found.' });
+
+  const fromMember = room.members.find((m) => m.user.equals(req.session.userId));
+  const toMember = room.members.find((m) => m.user.equals(targetUserId));
+  if (!fromMember || !toMember) {
+    return res.status(404).json({ error: 'Member not found.' });
+  }
+
+  if (reconcileMemberSeats(room)) {
+    room.markModified('members');
+    await room.save();
+  }
+  if (!fromMember.seat?.placement || !toMember.seat?.placement) {
+    return res.status(400).json({ error: 'Seat not assigned yet.' });
+  }
+
+  if (getPendingSwap(room._id, req.session.userId)) {
+    return res.status(409).json({ error: 'You already have a pending swap request.' });
+  }
+
+  const pending = createPendingSwap({
+    roomId: room._id,
+    roomUid: room.uid,
+    fromUserId: req.session.userId,
+    toUserId: targetUserId,
+    onExpire: (entry) => emitSwapExpired(req.app, entry),
+  });
+
+  const ev = await buildEphemeralEvent('seat_swap_request', req.session.userId, {
+    targetUserId: String(targetUserId),
+    expiresAt: pending.expiresAt,
+    ttlMs: SWAP_TTL_MS,
+  });
+  notifyUser(req, targetUserId, ev);
+
+  return res.json({
+    message: 'Swap request sent.',
+    expiresAt: pending.expiresAt,
+  });
+});
+
+// POST /api/rooms/:id/seat/swap/accept — invitee accepts; swaps placements in DB
+router.post('/:id/seat/swap/accept', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+  const { fromUserId } = req.body;
+  if (!fromUserId) return res.status(400).json({ error: 'fromUserId is required.' });
+
+  const room = await findRoom(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Room not found.' });
+
+  const pending = getPendingSwap(room._id, fromUserId);
+  if (!pending || String(pending.toUserId) !== String(req.session.userId)) {
+    return res.status(404).json({ error: 'No pending swap request.' });
+  }
+
+  const fromMember = room.members.find((m) => m.user.equals(fromUserId));
+  const toMember = room.members.find((m) => m.user.equals(req.session.userId));
+  if (!fromMember || !toMember) {
+    clearPendingSwap(room._id, fromUserId);
+    return res.status(404).json({ error: 'Member not found.' });
+  }
+
+  reconcileMemberSeats(room);
+  if (!swapMemberSeats(fromMember, toMember)) {
+    return res.status(400).json({ error: 'Could not swap seats.' });
+  }
+
+  reconcileMemberSeats(room);
+  room.markModified('members');
+  await room.save();
+  clearPendingSwap(room._id, fromUserId);
+
+  const ev = await buildEphemeralEvent('seat_swap_accepted', req.session.userId, {
+    fromUserId: String(fromUserId),
+    toUserId: String(req.session.userId),
+  });
+  broadcast(req, room, ev);
+
+  return res.json({ message: 'Seats swapped.' });
+});
+
+// POST /api/rooms/:id/seat/swap/decline — invitee declines (ephemeral, not history)
+router.post('/:id/seat/swap/decline', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
+  const { fromUserId } = req.body;
+  if (!fromUserId) return res.status(400).json({ error: 'fromUserId is required.' });
+
+  const room = await findRoom(req.params.id);
+  if (!room) return res.status(404).json({ error: 'Room not found.' });
+
+  const pending = getPendingSwap(room._id, fromUserId);
+  if (!pending || String(pending.toUserId) !== String(req.session.userId)) {
+    return res.status(404).json({ error: 'No pending swap request.' });
+  }
+
+  clearPendingSwap(room._id, fromUserId);
+
+  const ev = await buildEphemeralEvent('seat_swap_declined', req.session.userId, {
+    requesterUserId: String(fromUserId),
+  });
+  notifyUser(req, fromUserId, ev);
+
+  return res.json({ message: 'Swap request declined.' });
 });
 
 // DELETE /api/rooms/:id/member/tasks/:taskId - self removes a task from the room

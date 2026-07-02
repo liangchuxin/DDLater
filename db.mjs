@@ -71,6 +71,11 @@ const StudyRoomSchema = new mongoose.Schema({
   members: [{
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
+    // placement: desk-0 | desk-1 | side-left | side-right; furnitureKey from Furniture.key
+    seat: {
+      placement: { type: String, default: null },
+      furnitureKey: { type: String, default: null },
+    },
   }],
   pendingMembers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   // Background settings. Owner-only edit. Image files live in client/public/room/backgrounds/; key stores the filename.

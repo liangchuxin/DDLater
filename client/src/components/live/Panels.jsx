@@ -1,6 +1,93 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import PixelBox from "../PixelBox";
 import { pctClass, formatDue } from "./liveUtils";
+
+const HISTORY_HEIGHT_DEFAULT = 180;
+const HISTORY_HEIGHT_MIN = 120;
+const TASK_AREA_MIN = 72;
+
+function LivePanelStack({ historyTitle, history, children, storageKey }) {
+  const stackRef = useRef(null);
+  const heightRef = useRef(HISTORY_HEIGHT_DEFAULT);
+  const dragRef = useRef(null);
+
+  const [historyHeight, setHistoryHeight] = useState(() => {
+    if (!storageKey) return HISTORY_HEIGHT_DEFAULT;
+    const saved = Number(sessionStorage.getItem(storageKey));
+    return Number.isFinite(saved) && saved >= HISTORY_HEIGHT_MIN
+      ? saved
+      : HISTORY_HEIGHT_DEFAULT;
+  });
+  const [isResizing, setIsResizing] = useState(false);
+
+  useEffect(() => {
+    heightRef.current = historyHeight;
+  }, [historyHeight]);
+
+  const getLimits = useCallback(() => {
+    const stackH = stackRef.current?.clientHeight ?? 400;
+    const max = Math.max(HISTORY_HEIGHT_MIN, stackH - TASK_AREA_MIN);
+    return { min: HISTORY_HEIGHT_MIN, max };
+  }, []);
+
+  const onHandlePointerDown = (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const handle = e.currentTarget;
+    dragRef.current = { startY: e.clientY, startH: heightRef.current };
+    setIsResizing(true);
+    handle.setPointerCapture(e.pointerId);
+
+    const onMove = (ev) => {
+      if (!dragRef.current) return;
+      const { min, max } = getLimits();
+      const delta = dragRef.current.startY - ev.clientY;
+      const next = Math.min(
+        max,
+        Math.max(min, dragRef.current.startH + delta),
+      );
+      heightRef.current = next;
+      setHistoryHeight(next);
+    };
+
+    const onUp = (ev) => {
+      if (handle.hasPointerCapture?.(ev.pointerId)) {
+        handle.releasePointerCapture(ev.pointerId);
+      }
+      document.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointercancel", onUp);
+      dragRef.current = null;
+      setIsResizing(false);
+      if (storageKey) {
+        sessionStorage.setItem(storageKey, String(heightRef.current));
+      }
+    };
+
+    document.addEventListener("pointermove", onMove);
+    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointercancel", onUp);
+  };
+
+  return (
+    <div className="live-panel-stack" ref={stackRef}>
+      <div className="live-task-section">{children}</div>
+      <div
+        className={`live-history-section${isResizing ? " is-resizing" : ""}`}
+        style={{ height: historyHeight }}
+      >
+        <button
+          type="button"
+          className="live-history-handle"
+          onPointerDown={onHandlePointerDown}
+          aria-label="Drag to resize history panel"
+        />
+        <div className="live-task-section-title">{historyTitle}</div>
+        {history}
+      </div>
+    </div>
+  );
+}
 
 // Round avatar; falls back to initials when src is missing.
 export function Avatar({ src, displayName, className = "" }) {
@@ -66,6 +153,13 @@ function describeEvent(ev) {
       const den = ev.payload?.progressDenominator ?? 0;
       return {
         text: <>{who} updated {task} to {num}/{den}</>,
+        showApproveButton: false,
+      };
+    }
+    case "seat_change": {
+      const name = ev.payload?.furnitureKey?.replace(/_/g, " ") ?? "furniture";
+      return {
+        text: <>{who} changed their spot to {name}</>,
         showApproveButton: false,
       };
     }
@@ -234,7 +328,19 @@ export function SelfPanel({
 
   return (
     <>
-      <div className="live-task-section">
+      <LivePanelStack
+        historyTitle="History"
+        storageKey="live-history-height-self"
+        history={
+          <HistoryList
+            events={events}
+            isAdmin={isAdmin}
+            onApprove={onApprove}
+            onReject={onReject}
+            pendingUserIds={pendingUserIds}
+          />
+        }
+      >
         <div className="live-task-section-title">My Tasks</div>
         {roomTasks.length === 0 && (
           <div
@@ -362,17 +468,7 @@ export function SelfPanel({
           </svg>
           add task
         </button>
-      </div>
-      <div className="live-history-section">
-        <div className="live-task-section-title">History</div>
-        <HistoryList
-          events={events}
-          isAdmin={isAdmin}
-          onApprove={onApprove}
-          onReject={onReject}
-          pendingUserIds={pendingUserIds}
-        />
-      </div>
+      </LivePanelStack>
       {showModal && (
         <AddTaskModal
           onClose={() => setShowModal(false)}
@@ -398,10 +494,21 @@ export function MemberPanel({
   pendingUserIds,
 }) {
   return (
-    <>
-      <div className="live-task-section">
-        <div className="live-task-section-title">Tasks</div>
-        {member.tasks.length === 0 && (
+    <LivePanelStack
+      historyTitle="History"
+      storageKey="live-history-height-member"
+      history={
+        <HistoryList
+          events={events}
+          isAdmin={isAdmin}
+          onApprove={onApprove}
+          onReject={onReject}
+          pendingUserIds={pendingUserIds}
+        />
+      }
+    >
+      <div className="live-task-section-title">Tasks</div>
+      {member.tasks.length === 0 && (
           <div
             style={{
               fontFamily: "'DM Mono',monospace",
@@ -435,9 +542,17 @@ export function MemberPanel({
             </div>
           );
         })}
-      </div>
-      <div className="live-history-section">
-        <div className="live-task-section-title">History</div>
+    </LivePanelStack>
+  );
+}
+
+// OverallPanel: aggregate progress across all members.
+export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject, pendingUserIds }) {
+  return (
+    <LivePanelStack
+      historyTitle="All Activity"
+      storageKey="live-history-height-overall"
+      history={
         <HistoryList
           events={events}
           isAdmin={isAdmin}
@@ -445,18 +560,10 @@ export function MemberPanel({
           onReject={onReject}
           pendingUserIds={pendingUserIds}
         />
-      </div>
-    </>
-  );
-}
-
-// OverallPanel: aggregate progress across all members.
-export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject, pendingUserIds }) {
-  return (
-    <>
-      <div className="live-task-section">
-        <div className="live-task-section-title">Overall Progress</div>
-        {allMembers.map((m) => {
+      }
+    >
+      <div className="live-task-section-title">Overall Progress</div>
+      {allMembers.map((m) => {
           const tasks = m.tasks ?? [];
           const avg = tasks.length
             ? Math.round(
@@ -486,17 +593,6 @@ export function OverallPanel({ allMembers, events, isAdmin, onApprove, onReject,
             </div>
           );
         })}
-      </div>
-      <div className="live-history-section">
-        <div className="live-task-section-title">All Activity</div>
-        <HistoryList
-          events={events}
-          isAdmin={isAdmin}
-          onApprove={onApprove}
-          onReject={onReject}
-          pendingUserIds={pendingUserIds}
-        />
-      </div>
-    </>
+    </LivePanelStack>
   );
 }

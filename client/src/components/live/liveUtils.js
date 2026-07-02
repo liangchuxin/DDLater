@@ -39,100 +39,6 @@ export function getDominantColor(imgEl) {
   return `rgb(${r},${g},${b})`;
 }
 
-// Randomly assign seats. Called once; result stays stable for the scene.
-// Rules: self (memberIdx=0) sits randomly on the left/right desk slot; next
-// member may take the other desk slot; remaining members go to side furniture.
-export function generateSeats(memberCount, furnitures) {
-  const desk = furnitures.find((f) => f.key === "desk");
-  const pool = [...furnitures.filter((f) => f.key !== "desk")].sort(
-    () => Math.random() - 0.5,
-  );
-  const selfDeskSlot = Math.random() < 0.5 ? 0 : 1;
-  const sides = Math.random() < 0.5 ? ["left", "right"] : ["right", "left"];
-  const seats = [];
-  if (desk) {
-    if (memberCount > 0)
-      seats.push({
-        memberIdx: 0,
-        furniture: desk,
-        slotIndex: selfDeskSlot,
-        position: "center",
-      });
-    if (memberCount > 1)
-      seats.push({
-        memberIdx: 1,
-        furniture: desk,
-        slotIndex: 1 - selfDeskSlot,
-        position: "center",
-      });
-  }
-  if (pool[0] && memberCount > 2)
-    seats.push({
-      memberIdx: 2,
-      furniture: pool[0],
-      slotIndex: 0,
-      position: sides[0],
-    });
-  if (pool[1] && memberCount > 3)
-    seats.push({
-      memberIdx: 3,
-      furniture: pool[1],
-      slotIndex: 0,
-      position: sides[1],
-    });
-  return seats;
-}
-
-// Extend existing seats without disturbing occupants.
-// Strategy: fill empty desk slots first, then left/right side furniture.
-// If everything is full, late arrivals aren't placed (capped at 4 seats in MVP).
-export function extendSeats(existingSeats, memberCount, furnitures) {
-  const taken = new Set(existingSeats.map((s) => s.memberIdx));
-  const occupiedDeskSlots = new Set(
-    existingSeats
-      .filter((s) => s.position === "center")
-      .map((s) => s.slotIndex),
-  );
-  const occupiedSides = new Set(
-    existingSeats.filter((s) => s.position !== "center").map((s) => s.position),
-  );
-  const desk = furnitures.find((f) => f.key === "desk");
-  const sidePool = furnitures.filter((f) => f.key !== "desk");
-
-  const seats = [...existingSeats];
-  for (let i = 0; i < memberCount; i++) {
-    if (taken.has(i)) continue;
-    // 1) Take an open desk slot if available
-    if (desk) {
-      const freeDeskSlot = [0, 1].find((s) => !occupiedDeskSlots.has(s));
-      if (freeDeskSlot !== undefined) {
-        seats.push({
-          memberIdx: i,
-          furniture: desk,
-          slotIndex: freeDeskSlot,
-          position: "center",
-        });
-        occupiedDeskSlots.add(freeDeskSlot);
-        continue;
-      }
-    }
-    // 2) Left or right side, if available
-    const freeSide = ["left", "right"].find((s) => !occupiedSides.has(s));
-    if (freeSide && sidePool.length > 0) {
-      const furniture = sidePool[Math.floor(Math.random() * sidePool.length)];
-      seats.push({
-        memberIdx: i,
-        furniture,
-        slotIndex: 0,
-        position: freeSide,
-      });
-      occupiedSides.add(freeSide);
-      continue;
-    }
-  }
-  return seats;
-}
-
 // Side slot center x, clamped by sideInset (min distance from canvas edge) and
 // sideMinFromCenter (min distance from canvas center). Prevents side furniture
 // from overlapping the desk on narrow screens.
@@ -140,4 +46,112 @@ export function sideCenterX(position, sideInset, canvasW, sideMinFromCenter) {
   return position === "left"
     ? Math.min(sideInset, canvasW / 2 - sideMinFromCenter)
     : Math.max(canvasW - sideInset, canvasW / 2 + sideMinFromCenter);
+}
+
+const PLACEMENT_SCENE = {
+  "desk-0": { position: "center", slotIndex: 0 },
+  "desk-1": { position: "center", slotIndex: 1 },
+  "side-left": { position: "left", slotIndex: 0 },
+  "side-right": { position: "right", slotIndex: 0 },
+};
+
+const PLACEMENT_ORDER = ["desk-0", "desk-1", "side-left", "side-right"];
+
+function pickDeterministic(arr, seed) {
+  if (!arr.length) return null;
+  let h = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return arr[h % arr.length];
+}
+
+function memberUserId(member) {
+  return String(member.user?._id ?? member.user);
+}
+
+/** Client fallback when server seat is missing (e.g. legacy room before migration). */
+function resolveMemberSeat(member, ownerId, members, allowedKeys, resolvedByUser) {
+  if (member.seat?.placement && member.seat?.furnitureKey) return member.seat;
+
+  const userId = memberUserId(member);
+  if (resolvedByUser.has(userId)) return resolvedByUser.get(userId);
+
+  const occupied = new Set([
+    ...members.map((m) => m.seat?.placement).filter(Boolean),
+    ...[...resolvedByUser.values()].map((s) => s.placement),
+  ]);
+
+  let seat;
+  if (userId === String(ownerId)) {
+    seat = { placement: "desk-0", furnitureKey: "desk" };
+  } else {
+    const placement = PLACEMENT_ORDER.find((p) => !occupied.has(p));
+    if (!placement) return null;
+
+    if (placement.startsWith("desk-")) {
+      seat = { placement, furnitureKey: "desk" };
+    } else {
+      const keys = allowedKeys.length > 0 ? allowedKeys : ["desk"];
+      let pool = keys.filter((k) => k !== "desk");
+      if (pool.length === 0) pool = keys;
+      seat = { placement, furnitureKey: pickDeterministic(pool, userId) };
+    }
+  }
+
+  resolvedByUser.set(userId, seat);
+  return seat;
+}
+
+/** Build scene layout from server-persisted member seats. */
+export function buildLayoutFromRoom(
+  roomMembers,
+  sceneMembers,
+  furnitures,
+  roomOwnerId,
+  allowedKeys = null,
+) {
+  if (!roomMembers?.length || !furnitures.length) return [];
+
+  const keys =
+    allowedKeys?.length > 0 ? allowedKeys : furnitures.map((f) => f.key);
+  const furnitureByKey = Object.fromEntries(
+    furnitures.filter((f) => keys.includes(f.key)).map((f) => [f.key, f]),
+  );
+  const sceneByUserId = Object.fromEntries(
+    sceneMembers.map((m) => [
+      String(m.isSelf ? m._id : m.userId),
+      m,
+    ]),
+  );
+
+  const resolvedByUser = new Map();
+  const layout = [];
+  for (const m of roomMembers) {
+    const userId = memberUserId(m);
+    const seat = resolveMemberSeat(
+      m,
+      roomOwnerId,
+      roomMembers,
+      keys,
+      resolvedByUser,
+    );
+    if (!seat?.placement || !seat?.furnitureKey) continue;
+
+    const furniture = furnitureByKey[seat.furnitureKey];
+    if (!furniture) continue;
+
+    const member = sceneByUserId[userId];
+    if (!member) continue;
+
+    const scene = PLACEMENT_SCENE[seat.placement] ?? PLACEMENT_SCENE["desk-0"];
+    layout.push({
+      userId,
+      furniture,
+      slotIndex: scene.slotIndex,
+      position: scene.position,
+      member,
+    });
+  }
+  return layout;
 }
