@@ -5,9 +5,116 @@
   flex-wrap: wrap;
 }
 
+.pge-wrap.is-edit-mode {
+  flex-wrap: nowrap;
+}
+
 .pge-canvas-box {
   flex: 1 1 280px;
   min-width: 0;
+}
+
+.pge-canvas-box.is-edit-large {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.pge-canvas-box.is-edit-large .pge-canvas-inner {
+  align-self: center;
+}
+
+.pge-canvas-footer {
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.pge-canvas-footer .pge-hint {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  margin-right: auto;
+}
+
+.pge-canvas-toggles {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+.pge-canvas-inner {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.pge-edit-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pge-ref-ghost-layer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pge-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 8px;
+  font-family: "DM Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid var(--bg3);
+  cursor: pointer;
+  user-select: none;
+}
+
+.pge-toggle input {
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
+.pge-ref-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pge-ref-line {
+  position: absolute;
+  background: rgba(45, 138, 62, 0.9);
+}
+
+.pge-ref-line-h {
+  left: 0;
+  height: 2px;
+  transform: translateY(-1px);
+}
+
+.pge-ref-line-v {
+  top: 0;
+  width: 2px;
+  transform: translateX(-1px);
 }
 
 .pge-canvas {
@@ -21,6 +128,60 @@
 
 .pge-canvas.is-picking {
   cursor: cell;
+}
+
+.pge-canvas.is-moving {
+  cursor: grab;
+}
+
+.pge-canvas.is-liquefy {
+  cursor: crosshair;
+}
+
+.pge-brush-ring {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+  box-sizing: border-box;
+  border: 2px solid rgba(45, 138, 62, 0.9);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.65),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  transform: translate(-50%, -50%);
+}
+
+.pge-slider-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: "DM Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+}
+
+.pge-slider-label input[type="range"] {
+  width: 100%;
+  accent-color: var(--green);
+}
+
+.pge-select-box {
+  position: absolute;
+  border: 2px dashed var(--green);
+  background: rgba(45, 138, 62, 0.12);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+.pge-select-box.is-marquee {
+  border-style: dotted;
+  background: rgba(45, 138, 62, 0.08);
+}
+
+.pge-palette-add {
+  width: 100%;
+  justify-content: center;
 }
 
 .pge-hint {
@@ -172,6 +333,10 @@
 }
 
 @media (max-width: 720px) {
+  .pge-wrap.is-edit-mode {
+    flex-wrap: wrap;
+  }
+
   .pge-tools {
     flex: 1 1 100%;
     width: 100%;

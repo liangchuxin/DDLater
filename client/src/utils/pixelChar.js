@@ -94,6 +94,99 @@ export function autoRemoveBackground(grid, tolerance = 40) {
   return ng;
 }
 
+/** Pick max canvas dimension so cell size stays readable on wide/tall grids. */
+export function editorCanvasMaxSize(grid, baseSize = 360, minCellSize = 8) {
+  if (!grid?.length) return baseSize;
+  const cols = grid[0]?.length ?? 0;
+  const rows = grid.length;
+  const extent = Math.max(cols, rows, 1);
+  return Math.max(baseSize, extent * minCellSize);
+}
+
+export function compositeEditorLayout(editGrid, referenceGrid, showReference) {
+  const editRows = editGrid?.length ?? 0;
+  const editCols = editGrid?.[0]?.length ?? 0;
+  const refRows = referenceGrid?.length ?? 0;
+  const refCols = referenceGrid?.[0]?.length ?? 0;
+  const ghostOn = showReference && refRows > 0 && refCols > 0;
+  return {
+    editRows,
+    editCols,
+    refRows,
+    refCols,
+    ghostOn,
+    totalCols: ghostOn ? editCols + refCols : editCols,
+    totalRows: ghostOn ? Math.max(editRows, refRows) : editRows,
+  };
+}
+
+function _drawGridCells(ctx, grid, originX, originY, cs) {
+  grid.forEach((row, j) =>
+    row.forEach((col, i) => {
+      if (!col) return;
+      ctx.fillStyle = col;
+      ctx.fillRect(originX + i * cs, originY + j * cs, cs, cs);
+    }),
+  );
+}
+
+function _drawEditorCellGrid(ctx, originX, originY, cols, rows, cs, stroke = "rgba(13, 13, 13, 0.14)") {
+  const w = cols * cs;
+  const h = rows * cs;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= cols; i++) {
+    const x = originX + i * cs + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, originY);
+    ctx.lineTo(x, originY + h);
+    ctx.stroke();
+  }
+  for (let j = 0; j <= rows; j++) {
+    const y = originY + j * cs + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(originX, y);
+    ctx.lineTo(originX + w, y);
+    ctx.stroke();
+  }
+}
+
+/** Editor canvas: edit grid + optional semi-transparent reference on the right. */
+export function renderEditorComposite(
+  canvas,
+  editGrid,
+  maxSize,
+  { referenceGrid = null, showReference = false, referenceOpacity = 0.42 } = {},
+) {
+  const layout = compositeEditorLayout(editGrid, referenceGrid, showReference);
+  const { editRows, editCols, refRows, refCols, ghostOn, totalCols, totalRows } = layout;
+  if (!editRows || !editCols) return layout;
+
+  const cs = Math.max(1, Math.floor(maxSize / Math.max(totalCols, totalRows)));
+  const w = totalCols * cs;
+  const h = totalRows * cs;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, w, h);
+  _checkerboard(ctx, w, h, Math.max(4, cs));
+
+  _drawGridCells(ctx, editGrid, 0, 0, cs);
+  if (ghostOn) {
+    ctx.save();
+    ctx.globalAlpha = referenceOpacity;
+    _drawGridCells(ctx, referenceGrid, editCols * cs, 0, cs);
+    ctx.restore();
+  }
+
+  _drawEditorCellGrid(ctx, 0, 0, editCols, editRows, cs);
+  if (ghostOn) {
+    _drawEditorCellGrid(ctx, editCols * cs, 0, refCols, refRows, cs, "rgba(13, 13, 13, 0.08)");
+  }
+
+  return layout;
+}
+
 // transparent=true skips the checkerboard background for a transparent canvas.
 export function renderStatic(canvas, grid, maxSize = 260, transparent = false) {
   const M = grid.length, N = grid[0]?.length ?? 0;

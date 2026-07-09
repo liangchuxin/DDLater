@@ -231,10 +231,15 @@
 .as-avatar-item.active {
   border-color: var(--green);
 }
+.as-avatar-item.is-editing {
+  border-color: var(--ink2);
+  box-shadow: inset 0 0 0 1px var(--ink2);
+}
 .as-avatar-active-tag {
   position: absolute;
   top: 8px;
-  right: 8px;
+  left: 8px;
+  right: auto;
   font-family: "DM Mono", monospace;
   font-size: 10px;
   letter-spacing: 0.08em;
@@ -288,4 +293,96 @@
   color: var(--muted);
   text-align: center;
   padding: 20px 0;
+}
+
+.as-back-btn {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: "DM Mono", monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink2);
+  cursor: pointer;
+}
+
+.as-back-btn:hover {
+  color: var(--green);
+}
+
+.as-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.as-edit-title {
+  font-family: "DM Mono", monospace;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.as-edit-name-btn {
+  padding: 0 2px;
+  border: none;
+  background: none;
+  font: inherit;
+  color: var(--green);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(45, 138, 62, 0.35);
+  text-underline-offset: 3px;
+}
+
+.as-edit-name-btn:hover {
+  text-decoration-color: var(--green);
+}
+
+.as-edit-name-input {
+  min-width: 140px;
+  max-width: 280px;
+  padding: 2px 8px;
+  border: 1.5px solid var(--green);
+  background: var(--paper);
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+}
+
+.as-btn-cancel {
+  background: var(--greenbg);
+  color: var(--green);
+}
+
+.as-btn-cancel:hover:not(:disabled) {
+  background: #dcefe0;
+}
+
+.as-avatar-edit-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  background: var(--bg2);
+  color: var(--ink2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.as-avatar-edit-btn:hover {
+  background: var(--greenbg);
+  color: var(--green);
 }

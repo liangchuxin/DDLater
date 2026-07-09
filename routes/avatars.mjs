@@ -42,16 +42,64 @@ router.post("/", requireLogin, async (req, res) => {
   return res.status(201).json({ avatar });
 });
 
-// PATCH /api/avatars/:id/activate — switch active avatar
+// PATCH /api/avatars/:id/activate — switch active avatar (before /:id)
 router.patch("/:id/activate", requireLogin, async (req, res) => {
-  const avatar = await Avatar.findOne({ _id: req.params.id, user: req.session.userId });
-  if (!avatar) return res.status(404).json({ error: "Avatar not found." });
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: "Invalid avatar id." });
+    }
 
-  await Profile.findOneAndUpdate(
-    { user: req.session.userId },
-    { $set: { activeAvatar: avatar._id } }
-  );
-  return res.json({ activeAvatarId: avatar._id });
+    const avatar = await Avatar.findOne({ _id: req.params.id, user: req.session.userId });
+    if (!avatar) return res.status(404).json({ error: "Avatar not found." });
+
+    await Profile.findOneAndUpdate(
+      { user: req.session.userId },
+      { $set: { activeAvatar: avatar._id } }
+    );
+    return res.json({ activeAvatarId: avatar._id });
+  } catch (err) {
+    console.error("PATCH /api/avatars/:id/activate", err);
+    return res.status(500).json({ error: "Activate failed." });
+  }
+});
+
+// PATCH /api/avatars/:id — update an existing avatar (not default)
+router.patch("/:id", requireLogin, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ error: "Invalid avatar id." });
+    }
+
+    const { avatarGrid, avatarCuts, name } = req.body;
+    const update = {};
+    if (avatarGrid) update.avatarGrid = avatarGrid;
+    if (avatarCuts) update.avatarCuts = avatarCuts;
+    if (typeof name === "string" && name.trim()) update.name = name.trim();
+
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({ error: "Nothing to update." });
+    }
+
+    const avatar = await Avatar.findOneAndUpdate(
+      { _id: req.params.id, user: req.session.userId, isDefault: { $ne: true } },
+      { $set: update },
+      { new: true, runValidators: true }
+    );
+
+    if (!avatar) {
+      const existing = await Avatar.findOne({ _id: req.params.id, user: req.session.userId });
+      if (!existing) return res.status(404).json({ error: "Avatar not found." });
+      if (existing.isDefault) {
+        return res.status(403).json({ error: "Default avatar cannot be edited." });
+      }
+      return res.status(404).json({ error: "Avatar not found." });
+    }
+
+    return res.json({ avatar });
+  } catch (err) {
+    console.error("PATCH /api/avatars/:id", err);
+    return res.status(500).json({ error: "Update failed." });
+  }
 });
 
 // DELETE /api/avatars/:id — delete an avatar (default cannot be deleted)

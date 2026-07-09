@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   imageToRawGrid,
   autoRemoveBackground,
@@ -11,6 +11,7 @@ import {
   MAX_BG_TOLERANCE,
   BG_TOLERANCE_STEP,
 } from "../utils/pixelChar";
+import { cloneGrid, normalizeHex, padGridToSize, editGridTargetSize } from "../utils/pixelGrid";
 import { useConfirm } from "./ConfirmModal";
 import PixelGridEditor from "./PixelGridEditor";
 import "../styles/AvatarStudio.css";
@@ -188,9 +189,16 @@ export default function AvatarStudio() {
   const [avatars, setAvatars] = useState([]);
   const [activeAvatarId, setActiveAvatarId] = useState(null);
   const [editSession, setEditSession] = useState(0);
+  const [editingAvatar, setEditingAvatar] = useState(null);
+  const [editGrid, setEditGrid] = useState(null);
+  const [sessionPalette, setSessionPalette] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
 
   const staticCanvasRef = useRef(null);
   const hiddenCanvasRef = useRef(null);
+  const editNameInputRef = useRef(null);
 
   const { confirm, modal: confirmModal } = useConfirm();
 
@@ -220,6 +228,27 @@ export default function AvatarStudio() {
   }, []);
 
   useEffect(() => { loadAvatars(); }, [loadAvatars]);
+
+  const defaultReferenceAvatar = useMemo(
+    () => avatars.find((a) => a.isDefault) ?? null,
+    [avatars],
+  );
+
+  useEffect(() => {
+    if (!editingAvatar || !defaultReferenceAvatar?.avatarGrid) return;
+    setEditGrid((current) => {
+      if (!current) return current;
+      const { rows, cols } = editGridTargetSize(current, defaultReferenceAvatar.avatarGrid);
+      if (current.length >= rows && (current[0]?.length ?? 0) >= cols) return current;
+      return padGridToSize(current, rows, cols);
+    });
+  }, [editingAvatar, defaultReferenceAvatar]);
+
+  useEffect(() => {
+    if (!isEditingName) return;
+    editNameInputRef.current?.focus();
+    editNameInputRef.current?.select();
+  }, [isEditingName]);
 
   // Render static preview
   useEffect(() => {
@@ -294,6 +323,72 @@ export default function AvatarStudio() {
     setActiveAvatarId(id);
   };
 
+  const startEditAvatar = (av) => {
+    let grid = cloneGrid(av.avatarGrid);
+    if (defaultReferenceAvatar?.avatarGrid) {
+      const { rows, cols } = editGridTargetSize(grid, defaultReferenceAvatar.avatarGrid);
+      grid = padGridToSize(grid, rows, cols);
+    }
+    setEditingAvatar(av);
+    setEditGrid(grid);
+    setEditName(av.name || "My Character");
+    setIsEditingName(false);
+    setSessionPalette([]);
+    setMsg("");
+    setIsError(false);
+  };
+
+  const exitEditAvatar = () => {
+    setEditingAvatar(null);
+    setEditGrid(null);
+    setEditName("");
+    setIsEditingName(false);
+    setSessionPalette([]);
+    setMsg("");
+    setIsError(false);
+  };
+
+  const addToSessionPalette = (color) => {
+    const hex = normalizeHex(color);
+    if (!hex) return;
+    setSessionPalette((prev) => {
+      if (prev.some((c) => c.toLowerCase() === hex.toLowerCase())) return prev;
+      return [...prev, hex];
+    });
+  };
+
+  const handleUpdateAvatar = async () => {
+    if (!editingAvatar || !editGrid) return;
+    setIsUpdating(true);
+    setMsg("");
+    try {
+      const res = await fetch(`${API}/api/avatars/${editingAvatar._id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          avatarGrid: editGrid,
+          name: editName.trim() || editingAvatar.name,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg("Character updated.");
+        setIsError(false);
+        await loadAvatars();
+        exitEditAvatar();
+      } else {
+        setMsg(data.error || "Update failed.");
+        setIsError(true);
+      }
+    } catch {
+      setMsg("Network error — could not save.");
+      setIsError(true);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     const ok = await confirm({
       title: "Delete this character?",
@@ -325,6 +420,78 @@ export default function AvatarStudio() {
         <div className="as-wrap">
           {/* Left column */}
           <div className="as-left">
+            {editingAvatar ? (
+              <>
+                <button
+                  type="button"
+                  className="as-back-btn"
+                  onClick={exitEditAvatar}
+                >
+                  ← Back
+                </button>
+                <div className="as-edit-head">
+                  <div className="as-edit-title">
+                    Edit ·{" "}
+                    {isEditingName ? (
+                      <input
+                        ref={editNameInputRef}
+                        className="as-edit-name-input"
+                        type="text"
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onBlur={() => setIsEditingName(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            setIsEditingName(false);
+                          }
+                          if (e.key === "Escape") {
+                            setEditName(editingAvatar.name || "My Character");
+                            setIsEditingName(false);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        className="as-edit-name-btn"
+                        onClick={() => setIsEditingName(true)}
+                      >
+                        {editName.trim() || editingAvatar.name}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <PixelGridEditor
+                  key={editingAvatar._id}
+                  grid={editGrid}
+                  onGridChange={setEditGrid}
+                  enableMoveCopy
+                  sessionPalette={sessionPalette}
+                  onAddToPalette={addToSessionPalette}
+                  referenceAvatar={defaultReferenceAvatar}
+                />
+                <div className="as-name-row">
+                  <button
+                    type="button"
+                    className="as-btn as-btn-cancel"
+                    onClick={exitEditAvatar}
+                    disabled={isUpdating}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="as-btn as-btn-primary"
+                    onClick={handleUpdateAvatar}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? "Saving…" : "Save changes"}
+                  </button>
+                </div>
+                {msg && <div className={`as-msg${isError ? " error" : ""}`}>{msg}</div>}
+              </>
+            ) : (
+              <>
             <AvatarUploadZone
               imageSrc={imageSrc}
               onImageLoad={handleImageLoad}
@@ -397,6 +564,8 @@ export default function AvatarStudio() {
                 {msg && <div className={`as-msg${isError ? " error" : ""}`}>{msg}</div>}
               </>
             )}
+          </>
+            )}
           </div>
 
           {/* Right column: existing avatars */}
@@ -408,12 +577,37 @@ export default function AvatarStudio() {
             )}
 
             {avatars.map((av) => (
-              <div key={av._id} className={`as-avatar-item${activeAvatarId?.toString() === av._id ? " active" : ""}`}>
+              <div
+                key={av._id}
+                className={`as-avatar-item${activeAvatarId?.toString() === av._id ? " active" : ""}${editingAvatar?._id === av._id ? " is-editing" : ""}`}
+              >
                 {activeAvatarId?.toString() === av._id ? (
                   <span className="as-avatar-active-tag">active</span>
                 ) : av.isDefault ? (
                   <span className="as-avatar-default-tag">default</span>
                 ) : null}
+                {!av.isDefault && (
+                  <button
+                    type="button"
+                    className="as-avatar-edit-btn"
+                    onClick={() => startEditAvatar(av)}
+                    aria-label={`Edit ${av.name}`}
+                  >
+                    <svg
+                      width="10"
+                      height="10"
+                      viewBox="0 0 12 12"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M8.5 1.5l2 2L4 10H2v-2L8.5 1.5z" />
+                    </svg>
+                  </button>
+                )}
                 <div className="as-avatar-thumb">
                   <AvatarThumb grid={av.avatarGrid} size={80} />
                 </div>
