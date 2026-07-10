@@ -18,7 +18,11 @@ export const SIDE_MIN_FROM_CENTER = 460; // min distance from canvas center to s
 // Assets
 // Furniture images live under client/public/room/. DB imageKeys store filenames; frontend prepends the path.
 export const ROOM_ASSETS_PATH = "/room/";
-export const assetUrl = (filename) => `${ROOM_ASSETS_PATH}${filename}`;
+export const assetUrl = (filename) => {
+  if (!filename) return "";
+  if (/^(https?:|blob:|\/)/.test(filename)) return filename;
+  return `${ROOM_ASSETS_PATH}${filename}`;
+};
 
 // Background
 // Demo/fallback values. Real rooms pull from StudyRoom.background.

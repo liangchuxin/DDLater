@@ -5,9 +5,10 @@ import {
   assignOwnerSeat,
   assignSeatForJoin,
   ensureAllMemberSeats,
-  getAllowedFurnitureKeys,
   reconcileMemberSeats,
   swapMemberSeats,
+  syncCenterFurniture,
+  healCenterFurniture,
 } from '../seatUtils.mjs';
 import {
   clearPendingSwap,
@@ -15,12 +16,24 @@ import {
   getPendingSwap,
   SWAP_TTL_MS,
 } from '../seatSwapStore.mjs';
+import {
+  allowedFurnitureKeysForUser,
+  getUserFurnitureKeys,
+  getUserFurnitureKeysByMembers,
+} from '../userFurnitureUtils.mjs';
+import { deriveFurnitureSpec } from '../furnitureUploadUtils.mjs';
 
 const router = express.Router();
 const StudyRoom = mongoose.model('StudyRoom');
+const Furniture = mongoose.model('Furniture');
 const RoomEvent = mongoose.model('RoomEvent');
 const Profile = mongoose.model('Profile');
 const Task = mongoose.model('Task');
+
+async function memberFurnitureKeysMap(members) {
+  const userIds = members.map((m) => m.user?._id ?? m.user);
+  return getUserFurnitureKeysByMembers(userIds);
+}
 
 const generateUID = customAlphabet('0123456789', 7);
 
@@ -142,6 +155,9 @@ const ADMIN_ONLY_EVENT_TYPES = new Set([
   'join_rejected',
 ]);
 
+/** Never shown in room history (may still be broadcast ephemerally). */
+const HISTORY_EXCLUDED_EVENT_TYPES = ['seat_change'];
+
 // GET /api/rooms - list all active rooms
 router.get('/', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: 'Not logged in.' });
@@ -154,8 +170,11 @@ router.get('/', async (req, res) => {
       populate: { path: 'course' },
     });
 
+  const furnitureKeysByUser = await memberFurnitureKeysMap(
+    rooms.flatMap((room) => room.members),
+  );
   for (const room of rooms) {
-    if (reconcileMemberSeats(room)) {
+    if (reconcileMemberSeats(room, furnitureKeysByUser)) {
       room.markModified('members');
       await room.save();
     }
@@ -254,7 +273,12 @@ router.get('/:id', async (req, res) => {
     });
   }
 
-  if (reconcileMemberSeats(room)) {
+  const furnitureKeysByUser = await memberFurnitureKeysMap(room.members);
+  if (reconcileMemberSeats(room, furnitureKeysByUser)) {
+    room.markModified('members');
+    await room.save();
+  }
+  if (healCenterFurniture(room)) {
     room.markModified('members');
     await room.save();
   }
@@ -297,7 +321,9 @@ router.get('/:id/events', async (req, res) => {
 
   const q = { room: room._id };
   if (before) q.createdAt = { $lt: before };
-  if (!admin) q.type = { $nin: [...ADMIN_ONLY_EVENT_TYPES] };
+  const excluded = [...HISTORY_EXCLUDED_EVENT_TYPES];
+  if (!admin) excluded.push(...ADMIN_ONLY_EVENT_TYPES);
+  q.type = { $nin: excluded };
 
   const events = await RoomEvent.find(q).sort({ createdAt: -1 }).limit(limit);
   const populated = await Promise.all(events.map(populateEvent));
@@ -339,7 +365,10 @@ router.post('/:id/approve/:userId', async (req, res) => {
     return res.status(404).json({ error: 'User not in pending list.' });
 
   room.pendingMembers.splice(pendingIdx, 1);
-  const allowed = getAllowedFurnitureKeys(room);
+  const userKeys = await getUserFurnitureKeys(req.params.userId);
+  const allowed = room.furnitures?.length > 0
+    ? userKeys.filter((key) => room.furnitures.includes(key))
+    : userKeys;
   const seat = assignSeatForJoin(room.members, allowed);
   room.members.push({
     user: req.params.userId,
@@ -441,9 +470,18 @@ router.patch('/:id/member/seat', async (req, res) => {
   const member = room.members.find((m) => m.user.equals(req.session.userId));
   if (!member) return res.status(403).json({ error: 'Not a member of this room.' });
 
-  const allowed = getAllowedFurnitureKeys(room);
+  const allowed = await allowedFurnitureKeysForUser(req.session.userId, room);
   if (!allowed.includes(furnitureKey)) {
-    return res.status(400).json({ error: 'Furniture not allowed in this room.' });
+    return res.status(400).json({ error: 'Furniture not owned or not allowed in this room.' });
+  }
+
+  const furniture = await Furniture.findOne({ key: furnitureKey }).lean();
+  if (!furniture) {
+    return res.status(400).json({ error: 'Unknown furniture.' });
+  }
+  const spec = deriveFurnitureSpec(furniture);
+  if (!spec) {
+    return res.status(400).json({ error: 'Invalid furniture spec.' });
   }
 
   if (!member.seat?.placement) {
@@ -451,12 +489,26 @@ router.patch('/:id/member/seat', async (req, res) => {
     member.seat = isOwner ? assignOwnerSeat() : assignSeatForJoin(room.members, allowed);
   }
 
-  member.seat.furnitureKey = furnitureKey;
+  const isCenterSeat = member.seat.placement.startsWith('desk-');
+  const isCenterFurniture = spec.slotType === 'center';
+  if (isCenterSeat && !isCenterFurniture) {
+    return res.status(400).json({ error: 'Center seats require dual-seat furniture.' });
+  }
+  if (!isCenterSeat && isCenterFurniture) {
+    return res.status(400).json({ error: 'Dual-seat furniture only fits center seats.' });
+  }
+
+  if (isCenterFurniture) {
+    syncCenterFurniture(room, furnitureKey);
+  } else {
+    member.seat.furnitureKey = furnitureKey;
+  }
   await room.save();
 
-  const ev = await emitEvent(room, 'seat_change', req.session.userId, {
+  const ev = await buildEphemeralEvent('seat_change', req.session.userId, {
     furnitureKey,
     placement: member.seat.placement,
+    centerSync: isCenterFurniture,
   });
   broadcast(req, room, ev);
 
@@ -481,7 +533,8 @@ router.post('/:id/seat/swap/request', async (req, res) => {
     return res.status(404).json({ error: 'Member not found.' });
   }
 
-  if (reconcileMemberSeats(room)) {
+  const furnitureKeysByUser = await memberFurnitureKeysMap(room.members);
+  if (reconcileMemberSeats(room, furnitureKeysByUser)) {
     room.markModified('members');
     await room.save();
   }
@@ -535,12 +588,13 @@ router.post('/:id/seat/swap/accept', async (req, res) => {
     return res.status(404).json({ error: 'Member not found.' });
   }
 
-  reconcileMemberSeats(room);
+  const furnitureKeysByUser = await memberFurnitureKeysMap(room.members);
+  reconcileMemberSeats(room, furnitureKeysByUser);
   if (!swapMemberSeats(fromMember, toMember)) {
     return res.status(400).json({ error: 'Could not swap seats.' });
   }
 
-  reconcileMemberSeats(room);
+  reconcileMemberSeats(room, furnitureKeysByUser);
   room.markModified('members');
   await room.save();
   clearPendingSwap(room._id, fromUserId);

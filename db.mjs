@@ -59,10 +59,21 @@ const FurnitureSchema = new mongoose.Schema({
   capacity:  { type: Number, default: 1 },
   layers:    { type: Number, default: 1 },
   zSlot:     { type: String, default: 'char-back' },  // 'char-back' | 'char-front' | 'char-middle'
-  layout:    { type: mongoose.Schema.Types.Mixed, default: {} },  // per-furniture visual params (px @ CANVAS_REF)
+  renderTemplate: { type: String, default: null },    // legacy; new furniture uses zSlot + slotType + layers
+  slotType:  { type: String, default: 'side' },     // 'side' | 'center'
+  // layout (Mixed): center desk uses seats[] with per-seat charOffsetX/Y/Rotation
+  layout:    { type: mongoose.Schema.Types.Mixed, default: {} },
   imageKeys: [String],
   isDefault: { type: Boolean, default: false },
 });
+
+const UserFurnitureSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  furnitureKey: { type: String, required: true }, // → Furniture.key
+  unlockedAt: { type: Date, default: Date.now },
+  source: { type: String, default: 'default' }, // default | task | purchase | event
+});
+UserFurnitureSchema.index({ user: 1, furnitureKey: 1 }, { unique: true });
 
 const StudyRoomSchema = new mongoose.Schema({
   uid: { type: String, unique: true },
@@ -85,7 +96,7 @@ const StudyRoomSchema = new mongoose.Schema({
     offsetX: { type: Number, default: 0 },
     offsetY: { type: Number, default: -360 },
   },
-  // When non-empty, restricts to these furniture keys; empty = all furnitures available.
+  // When non-empty, intersects with each member's owned furniture keys.
   furnitures: [String],
   createdAt: { type: Date, default: Date.now },
   active: { type: Boolean, default: true },
@@ -100,6 +111,7 @@ mongoose.model("Profile", ProfileSchema);
 mongoose.model("Course", CourseSchema);
 mongoose.model("Task", TaskSchema);
 mongoose.model("Furniture", FurnitureSchema);
+mongoose.model("UserFurniture", UserFurnitureSchema);
 mongoose.model("StudyRoom", StudyRoomSchema);
 
 // Room event stream. Every action that needs to appear in history inserts one.

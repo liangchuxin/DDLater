@@ -70,6 +70,17 @@ function memberUserId(member) {
   return String(member.user?._id ?? member.user);
 }
 
+function centerFurnitureKeyFromMembers(members, fallback = "desk") {
+  const desk0 = members.find((m) => m.seat?.placement === "desk-0");
+  if (desk0?.seat?.furnitureKey) return desk0.seat.furnitureKey;
+  for (const m of members) {
+    if (m.seat?.placement?.startsWith("desk-") && m.seat?.furnitureKey) {
+      return m.seat.furnitureKey;
+    }
+  }
+  return fallback;
+}
+
 /** Client fallback when server seat is missing (e.g. legacy room before migration). */
 function resolveMemberSeat(member, ownerId, members, allowedKeys, resolvedByUser) {
   if (member.seat?.placement && member.seat?.furnitureKey) return member.seat;
@@ -90,7 +101,10 @@ function resolveMemberSeat(member, ownerId, members, allowedKeys, resolvedByUser
     if (!placement) return null;
 
     if (placement.startsWith("desk-")) {
-      seat = { placement, furnitureKey: "desk" };
+      seat = {
+        placement,
+        furnitureKey: centerFurnitureKeyFromMembers(members),
+      };
     } else {
       const keys = allowedKeys.length > 0 ? allowedKeys : ["desk"];
       let pool = keys.filter((k) => k !== "desk");
@@ -109,15 +123,13 @@ export function buildLayoutFromRoom(
   sceneMembers,
   furnitures,
   roomOwnerId,
-  allowedKeys = null,
+  sceneKeys = null,
 ) {
   if (!roomMembers?.length || !furnitures.length) return [];
 
   const keys =
-    allowedKeys?.length > 0 ? allowedKeys : furnitures.map((f) => f.key);
-  const furnitureByKey = Object.fromEntries(
-    furnitures.filter((f) => keys.includes(f.key)).map((f) => [f.key, f]),
-  );
+    sceneKeys?.length > 0 ? sceneKeys : furnitures.map((f) => f.key);
+  const furnitureByKey = Object.fromEntries(furnitures.map((f) => [f.key, f]));
   const sceneByUserId = Object.fromEntries(
     sceneMembers.map((m) => [
       String(m.isSelf ? m._id : m.userId),
@@ -139,7 +151,7 @@ export function buildLayoutFromRoom(
     if (!seat?.placement || !seat?.furnitureKey) continue;
 
     const furniture = furnitureByKey[seat.furnitureKey];
-    if (!furniture) continue;
+    if (!furniture || !keys.includes(seat.furnitureKey)) continue; // scene catalog keys, not viewer-owned
 
     const member = sceneByUserId[userId];
     if (!member) continue;

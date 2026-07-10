@@ -1,18 +1,29 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const AuthContext = createContext(null);
+const API = import.meta.env.VITE_API_URL;
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(undefined);
 
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setCurrentUser(data));
+  const refetchCurrentUser = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/auth/me`, { credentials: "include" });
+      const data = res.ok ? await res.json() : null;
+      setCurrentUser(data);
+      return data;
+    } catch {
+      setCurrentUser(null);
+      return null;
+    }
   }, []);
 
+  useEffect(() => {
+    refetchCurrentUser();
+  }, [refetchCurrentUser]);
+
   return (
-    <AuthContext.Provider value={{ currentUser, setCurrentUser }}>
+    <AuthContext.Provider value={{ currentUser, setCurrentUser, refetchCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -4,13 +4,27 @@ import {
   CANVAS_REF_H,
   CHAR_REF_H,
   CHAR_REF_W,
-  M_APPROX,
   WORLD_SCALE,
-  SIDE_MIN_FROM_CENTER,
   Z_LAYERS,
   assetUrl,
 } from "./roomConfig";
-import { sideCenterX } from "./liveUtils";
+import { normalizeDeskLayout } from "./furniture/normalizeDeskLayout";
+import SideFurnitureSlot from "./furniture/SideFurnitureSlot";
+import { deriveFurnitureSpec, resolveSideRenderMode } from "./furniture/furnitureTemplates";
+
+function isCenterFurniture(furniture) {
+  return deriveFurnitureSpec(furniture)?.slotType === "center";
+}
+
+function groupCenterEntries(entries) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const key = entry.furniture.key;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(entry);
+  }
+  return groups;
+}
 
 function renderSelectableChar({
   entry,
@@ -41,251 +55,24 @@ function renderSelectableChar({
   );
 }
 
-// SideSlot: bean_bag / bed / sofa. centerX + slotBottom = desk slot overrides.
-function SideSlot({
-  entry,
-  position,
-  canvasW,
-  canvasH,
-  sceneScale = 1,
-  centerX,
-  slotBottom,
-  selfUserId,
-  sceneTargetUserId,
-  scenePendingUserId,
-  onSelectTarget,
-  onAction,
-  onPendingTimeout,
-}) {
-  const { furniture, member } = entry;
-  const key = furniture.key;
-  const L = furniture.layout;
-  const k = canvasH / CANVAS_REF_H;
-  const charH = CHAR_REF_H * sceneScale;
-  const charBoxW = CHAR_REF_W * sceneScale;
-  const z = Z_LAYERS[furniture.zSlot];
-
-  const offlineStyle = member.isOnline === false ? { opacity: 0.35 } : {};
-
-  const dimAvatar = (node) => (
-    <div style={{ transition: "opacity 0.3s ease", ...offlineStyle }}>{node}</div>
-  );
-
-  const cx =
-    centerX ??
-    sideCenterX(
-      position,
-      L.sideInset * k,
-      canvasW,
-      SIDE_MIN_FROM_CENTER * k,
-    );
-
-  const playerAvatar = (clipBottomRows = 0, { anchor = "bottom" } = {}) => (
-    <PlayerAvatar
-      avatarGrid={member.activeAvatar?.avatarGrid}
-      avatarCuts={member.activeAvatar?.avatarCuts}
-      sceneScale={sceneScale}
-      clipBottomRows={clipBottomRows}
-      anchor={anchor}
+// SideSlot: side furniture via template renderer (legacy keys mapped in normalizeFurnitureLayout).
+function SideSlot(props) {
+  const { entry } = props;
+  if (!resolveSideRenderMode(entry.furniture)) return null;
+  return (
+    <SideFurnitureSlot
+      {...props}
+      renderSelectableChar={renderSelectableChar}
     />
   );
-
-  const selectionProps = {
-    entry,
-    selfUserId,
-    sceneTargetUserId,
-    scenePendingUserId,
-    onSelectTarget,
-    onAction,
-    onPendingTimeout,
-  };
-
-  // Bean bag
-  if (key === "bean_bag") {
-    const bagW = L.bagWidth * k;
-    const bagH = L.bagHeight * k;
-    const bagOffY = L.bagOffsetY * k;
-    const charOffX = L.charOffsetX * k;
-    const bottom = (slotBottom ?? L.charBottom) * k;
-    const ctrW = Math.max(bagW, charBoxW);
-    const ctrH = charH + bagOffY;
-    return (
-      <div
-        style={{
-          position: "absolute",
-          left: cx - ctrW / 2,
-          bottom,
-          width: ctrW,
-          height: ctrH,
-          pointerEvents: "none",
-        }}
-      >
-        <img
-          src={assetUrl(furniture.imageKeys[0])}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: (ctrW - bagW) / 2,
-            bottom: 0,
-            width: bagW,
-            height: bagH,
-            imageRendering: "pixelated",
-            zIndex: z.furniture,
-            pointerEvents: "none",
-          }}
-        />
-        {renderSelectableChar({
-          ...selectionProps,
-          style: {
-            position: "absolute",
-            left: (ctrW - charBoxW) / 2 + charOffX,
-            bottom: bagOffY,
-            zIndex: z.char,
-          },
-          innerStyle: {
-            transform: `rotate(${L.charRotation}deg)`,
-            transformOrigin: "bottom center",
-          },
-          children: dimAvatar(playerAvatar()),
-        })}
-      </div>
-    );
-  }
-
-  // Bed (two image layers sandwiching the character)
-  if (key === "bed") {
-    const bedW = L.bedWidth * k;
-    const bedH = L.bedHeight * k;
-    const bedOffY = L.bedOffsetY * k;
-    const charW = L.charWidth * k;
-    const charOffX = L.charOffsetX * k;
-    const bottom = (slotBottom ?? L.bottom) * k;
-    const ctrH = bedOffY + bedH;
-    const ctrW = Math.max(bedW, charW + charOffX * 2);
-    return (
-      <div
-        style={{
-          position: "absolute",
-          left: cx - ctrW / 2,
-          bottom,
-          width: ctrW,
-          height: ctrH,
-          pointerEvents: "none",
-        }}
-      >
-        <img
-          src={assetUrl(furniture.imageKeys[0])}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: (ctrW - bedW) / 2,
-            bottom: 0,
-            width: bedW,
-            height: bedH,
-            imageRendering: "pixelated",
-            zIndex: z.bottom,
-            pointerEvents: "none",
-          }}
-        />
-        {renderSelectableChar({
-          ...selectionProps,
-          style: {
-            position: "absolute",
-            left: charOffX + (charW - charBoxW) / 2,
-            top: (L.charOffsetY ?? 0) * k,
-            width: charBoxW,
-            height: charH,
-            zIndex: z.char,
-          },
-          innerStyle: {
-            width: "100%",
-            height: "100%",
-            transform: `rotate(${L.charRotation}deg)`,
-            transformOrigin: "center center",
-          },
-          children: dimAvatar(playerAvatar(0, { anchor: "top" })),
-        })}
-        <img
-          src={assetUrl(furniture.imageKeys[1])}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: (ctrW - bedW) / 2,
-            bottom: 0,
-            width: bedW,
-            height: bedH,
-            imageRendering: "pixelated",
-            zIndex: z.top,
-            pointerEvents: "none",
-          }}
-        />
-      </div>
-    );
-  }
-
-  // Sofa (pixelChar clips legs internally)
-  if (key === "sofa") {
-    const sofaW = L.sofaWidth * k;
-    const sofaH = L.sofaHeight * k;
-    const sofaBottom = (slotBottom ?? L.sofaBottom) * k;
-    const visibleCharH =
-      (charH * (M_APPROX - L.charClipRows)) / M_APPROX;
-    const charBottomInContainer = sofaH - L.charTopInSofa * k;
-    const ctrH = charBottomInContainer + visibleCharH;
-    const ctrW = Math.max(sofaW, charBoxW);
-    return (
-      <div
-        style={{
-          position: "absolute",
-          left: cx - ctrW / 2,
-          bottom: sofaBottom,
-          width: ctrW,
-          height: ctrH,
-          pointerEvents: "none",
-        }}
-      >
-        <img
-          src={assetUrl(furniture.imageKeys[0])}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            left: (ctrW - sofaW) / 2,
-            bottom: 0,
-            width: sofaW,
-            height: sofaH,
-            imageRendering: "pixelated",
-            zIndex: z.furniture,
-            objectFit: "fill",
-            pointerEvents: "none",
-          }}
-        />
-        {renderSelectableChar({
-          ...selectionProps,
-          style: {
-            position: "absolute",
-            left: "50%",
-            bottom: charBottomInContainer,
-            transform: "translateX(-50%)",
-            zIndex: z.char,
-          },
-          children: dimAvatar(playerAvatar(L.charClipRows)),
-        })}
-      </div>
-    );
-  }
-
-  return null;
 }
 
 function DeskChar({
   entry,
   centerX,
-  deskCharW,
-  deskCharBottom,
+  charBottom,
+  charWidth,
+  charRotation = 0,
   sceneScale = 1,
   deskZ,
   selfUserId,
@@ -306,13 +93,17 @@ function DeskChar({
     onPendingTimeout,
     style: {
       position: "absolute",
-      left: centerX - deskCharW / 2,
-      bottom: deskCharBottom,
-      width: deskCharW,
+      left: centerX - charWidth / 2,
+      bottom: charBottom,
+      width: charWidth,
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       zIndex: deskZ?.char ?? 3,
+    },
+    innerStyle: {
+      transform: `rotate(${charRotation}deg)`,
+      transformOrigin: "bottom center",
     },
     children: (
       <div style={{ opacity: offline ? 0.35 : 1, transition: "opacity 0.3s ease" }}>
@@ -348,34 +139,12 @@ export default function RoomScene({
   const charH = CHAR_REF_H * sceneScale;
   const { src: bgSrc, heightPct: bgHeightPct, offsetX: bgOffsetX, offsetY: bgOffsetY } = bg;
 
-  const deskEntries = layout.filter((e) => e.position === "center");
-  const useSharedDesk =
-    deskEntries.length > 0 &&
-    deskEntries.every((e) => e.furniture.key === "desk");
-  const sharedDeskEntries = useSharedDesk ? deskEntries : [];
-  const soloDeskEntries = useSharedDesk
-    ? []
-    : deskEntries.filter((e) => e.furniture.key === "desk");
-  const centerAltEntries = useSharedDesk
-    ? []
-    : deskEntries.filter((e) => e.furniture.key !== "desk");
+  const centerEntries = layout.filter((e) => e.position === "center");
+  const centerGroups = groupCenterEntries(centerEntries);
   const leftEntries = layout.filter((e) => e.position === "left");
   const rightEntries = layout.filter((e) => e.position === "right");
-  const deskFurniture = furnitures.find((f) => f.key === "desk");
-  const deskLayout = deskFurniture?.layout;
-  const deskZ = deskFurniture ? Z_LAYERS[deskFurniture.zSlot] : null;
 
   const k = canvasH / CANVAS_REF_H;
-  const deskImgBottom = (deskLayout?.imgBottom ?? 0) * k;
-  const deskImgWidth = (deskLayout?.imgWidth ?? 0) * k;
-  const deskCharBottom = (deskLayout?.charBottom ?? 0) * k;
-  const deskCharW = (deskLayout?.charWidth ?? 0) * k;
-  const halfGap = (deskLayout?.charHalfGap ?? 0) * k;
-  const deskCharCenters = [
-    canvasW / 2 - halfGap,
-    canvasW / 2 + halfGap,
-  ];
-  const deskImgLeft = canvasW / 2 - deskImgWidth / 2;
 
   const extraEachSide = (canvasW * (WORLD_SCALE - 1)) / 2;
   const worldW = canvasW * WORLD_SCALE;
@@ -428,64 +197,89 @@ export default function RoomScene({
             height: "100%",
           }}
         >
-          {sharedDeskEntries.map((entry) => (
-            <DeskChar
-              key={`desk-char-${entry.userId}`}
-              entry={entry}
-              centerX={deskCharCenters[entry.slotIndex]}
-              deskCharW={deskCharW}
-              deskCharBottom={deskCharBottom}
-              sceneScale={sceneScale}
-              deskZ={deskZ}
-              {...slotProps}
-            />
-          ))}
+          {Array.from(centerGroups.entries()).map(([furnitureKey, entries]) => {
+            const furniture = entries[0]?.furniture;
+            if (!furniture || !isCenterFurniture(furniture)) return null;
 
-          {soloDeskEntries.map((entry) => (
-            <DeskChar
-              key={`solo-desk-char-${entry.userId}`}
-              entry={entry}
-              centerX={deskCharCenters[entry.slotIndex]}
-              deskCharW={deskCharW}
-              deskCharBottom={deskCharBottom}
-              sceneScale={sceneScale}
-              deskZ={deskZ}
-              {...slotProps}
-            />
-          ))}
+            const layoutNorm = normalizeDeskLayout(
+              furniture.layout,
+              furniture.capacity ?? 2,
+            );
+            const centerZ = Z_LAYERS[furniture.zSlot];
+            const halfGap = layoutNorm.charHalfGap * k;
+            const centerCharCenters = [
+              canvasW / 2 - halfGap,
+              canvasW / 2 + halfGap,
+            ];
+            const centerImgBottom = layoutNorm.imgBottom * k;
+            const centerImgWidth = layoutNorm.imgWidth * k;
+            const centerImgLeft = canvasW / 2 - centerImgWidth / 2;
 
-          {centerAltEntries.map((entry) => (
-            <div key={`center-alt-${entry.userId}`} style={{ position: "absolute", inset: 0 }}>
-              <SideSlot
-                entry={entry}
-                position="left"
-                canvasW={canvasW}
-                canvasH={canvasH}
-                sceneScale={sceneScale}
-                centerX={deskCharCenters[entry.slotIndex]}
-                slotBottom={deskCharBottom / k}
-                {...slotProps}
-              />
-            </div>
-          ))}
+            const centerCharProps = (entry) => {
+              const seat =
+                layoutNorm.seats[entry.slotIndex] ?? layoutNorm.seats[0];
+              return {
+                centerX: centerCharCenters[entry.slotIndex] + seat.charOffsetX * k,
+                charBottom: layoutNorm.charBottom * k + seat.charOffsetY * k,
+                charWidth: seat.charWidth * k,
+                charRotation: seat.charRotation ?? 0,
+              };
+            };
 
-          {useSharedDesk && deskFurniture && (
-            <img
-              src={assetUrl(deskFurniture.imageKeys[0])}
-              alt=""
-              draggable={false}
-              style={{
-                position: "absolute",
-                left: deskImgLeft,
-                bottom: deskImgBottom,
-                width: deskImgWidth,
-                height: "auto",
-                imageRendering: "pixelated",
-                zIndex: deskZ?.furniture ?? 4,
-                pointerEvents: "none",
-              }}
-            />
-          )}
+            return (
+              <div key={`center-group-${furnitureKey}`}>
+                {entries.map((entry) => (
+                  <DeskChar
+                    key={`center-char-${entry.userId}`}
+                    entry={entry}
+                    {...centerCharProps(entry)}
+                    sceneScale={sceneScale}
+                    deskZ={centerZ}
+                    {...slotProps}
+                  />
+                ))}
+                {furniture.imageKeys?.[0] && (
+                  <img
+                    src={
+                      furniture._assetV
+                        ? `${assetUrl(furniture.imageKeys[0])}?v=${furniture._assetV}`
+                        : assetUrl(furniture.imageKeys[0])
+                    }
+                    alt=""
+                    draggable={false}
+                    style={{
+                      position: "absolute",
+                      left: centerImgLeft,
+                      bottom: centerImgBottom,
+                      width: centerImgWidth,
+                      height: "auto",
+                      imageRendering: "pixelated",
+                      zIndex: centerZ?.furniture ?? 4,
+                      pointerEvents: "none",
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          {centerEntries
+            .filter((entry) => !isCenterFurniture(entry.furniture))
+            .map((entry) => (
+              <div
+                key={`center-side-${entry.userId}`}
+                style={{ position: "absolute", inset: 0 }}
+              >
+                <SideSlot
+                  entry={entry}
+                  position="left"
+                  canvasW={canvasW}
+                  canvasH={canvasH}
+                  sceneScale={sceneScale}
+                  {...slotProps}
+                />
+              </div>
+            ))}
 
           {leftEntries.map((entry) => (
             <div key={`left-${entry.userId}`} style={{ position: "absolute", inset: 0 }}>

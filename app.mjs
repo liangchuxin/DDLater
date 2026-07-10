@@ -13,6 +13,7 @@ import tasksRouter from "./routes/tasks.mjs";
 import roomsRouter from "./routes/rooms.mjs";
 import avatarsRouter from "./routes/avatars.mjs";
 import furnituresRouter from "./routes/furnitures.mjs";
+import userFurnitureRouter from "./routes/userFurniture.mjs";
 
 mongoose.connect(process.env.DSN).then(() => console.log("mongodb connected"));
 
@@ -38,7 +39,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: false }));
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "25mb" }));
 
 // Session middleware as a variable so it can be shared by both HTTP and socket.
 const sessionMiddleware = session({
@@ -61,6 +62,7 @@ app.use("/api/tasks", tasksRouter);
 app.use("/api/rooms", roomsRouter);
 app.use("/api/avatars", avatarsRouter);
 app.use("/api/furnitures", furnituresRouter);
+app.use("/api/me/furniture", userFurnitureRouter);
 
 app.get("/api/universities", async (req, res) => {
   const { name } = req.query;

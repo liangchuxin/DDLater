@@ -245,6 +245,17 @@
   cursor: wait;
 }
 
+.live-scene-toolbar-furniture-item.is-current {
+  cursor: default;
+  background: var(--greenbg);
+  box-shadow: inset 0 0 0 2px var(--green);
+}
+
+.live-scene-toolbar-furniture-item.is-current:hover {
+  transform: none;
+  background: var(--greenbg);
+}
+
 .live-scene-toolbar-furniture-thumb {
   width: 26px;
   height: 26px;
@@ -272,6 +283,20 @@
   object-position: bottom center;
   image-rendering: pixelated;
   pointer-events: none;
+}
+
+.live-scene-toolbar-furniture-thumb.is-center {
+  width: 38px;
+  height: 26px;
+}
+
+.live-scene-toolbar-furniture-thumb-layer.is-center {
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.live-scene-toolbar-furniture-item:has(.is-center) {
+  min-width: 44px;
 }
 
 .live-scene-toolbar-furniture-fallback {

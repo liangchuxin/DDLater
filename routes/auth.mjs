@@ -3,6 +3,8 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { customAlphabet } from "nanoid";
 import { loadDefaultAvatarData } from "../scripts/default-avatar-loader.mjs";
+import { seedStarterFurniture } from "../userFurnitureUtils.mjs";
+import { isCatalogAdmin } from "../adminUtils.mjs";
 
 const router = express.Router();
 const User = mongoose.model("User");
@@ -53,6 +55,12 @@ router.post("/register", async (req, res) => {
     console.warn("[register] failed to create default avatar:", err.message);
   }
 
+  try {
+    await seedStarterFurniture(user._id);
+  } catch (err) {
+    console.warn("[register] failed to seed starter furniture:", err.message);
+  }
+
   return res.json({ message: "Registration success." });
 });
 
@@ -70,10 +78,12 @@ router.post("/login", async (req, res) => {
   req.session.userId = existing._id;
   // Pull profile for displayName
   const profile = await Profile.findOne({ user: existing._id });
+  const catalogAdmin = await isCatalogAdmin(existing._id);
   return res.json({
     _id: existing._id,
     displayName: profile?.displayName ?? "",
     uid: profile?.uid ?? "",
+    isCatalogAdmin: catalogAdmin,
   });
 });
 
@@ -85,11 +95,13 @@ router.get("/me", async (req, res) => {
   if (!profile) {
     return res.status(404).json({ error: "Profile not found." });
   }
+  const catalogAdmin = await isCatalogAdmin(req.session.userId);
   return res.json({
     _id: req.session.userId,
     displayName: profile.displayName,
     uid: profile.uid,
     avatar: profile.avatar ?? null,
+    isCatalogAdmin: catalogAdmin,
   });
 });
 

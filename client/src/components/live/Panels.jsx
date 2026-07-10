@@ -156,13 +156,6 @@ function describeEvent(ev) {
         showApproveButton: false,
       };
     }
-    case "seat_change": {
-      const name = ev.payload?.furnitureKey?.replace(/_/g, " ") ?? "furniture";
-      return {
-        text: <>{who} changed their spot to {name}</>,
-        showApproveButton: false,
-      };
-    }
     default:
       return { text: <>{who} — {ev.type}</>, showApproveButton: false };
   }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import PixelBox from "../PixelBox";
 import { assetUrl } from "./roomConfig";
+import { deriveFurnitureSpec } from "./furniture/furnitureTemplates";
 import { EmojiIcon, FurnitureIcon, OutfitIcon } from "./ScenePixelIcons";
 
 const TOOLBAR_ITEMS = [
@@ -11,6 +12,10 @@ const TOOLBAR_ITEMS = [
 
 function FurnitureThumb({ furniture }) {
   const keys = furniture.imageKeys ?? [];
+  const isCenter = deriveFurnitureSpec(furniture)?.slotType === "center";
+  const thumbClass = isCenter
+    ? "live-scene-toolbar-furniture-thumb is-center"
+    : "live-scene-toolbar-furniture-thumb";
   if (keys.length === 0) {
     return <span className="live-scene-toolbar-furniture-fallback" />;
   }
@@ -20,7 +25,7 @@ function FurnitureThumb({ furniture }) {
         src={assetUrl(keys[0])}
         alt=""
         draggable={false}
-        className="live-scene-toolbar-furniture-thumb"
+        className={thumbClass}
       />
     );
   }
@@ -32,7 +37,7 @@ function FurnitureThumb({ furniture }) {
           src={assetUrl(key)}
           alt=""
           draggable={false}
-          className="live-scene-toolbar-furniture-thumb-layer"
+          className={`live-scene-toolbar-furniture-thumb-layer${isCenter ? " is-center" : ""}`}
           style={{ zIndex: index + 1 }}
         />
       ))}
@@ -50,15 +55,21 @@ export default function SceneToolbar({
 }) {
   const [openPanel, setOpenPanel] = useState(null);
 
-  const swapOptions = useMemo(() => {
+  const furnitureOptions = useMemo(() => {
     const seatCapacity = placement?.startsWith("desk-") ? 2 : 1;
     return furnitures.filter((f) => {
       if (!allowedFurnitureKeys.includes(f.key)) return false;
-      if ((f.capacity ?? 1) !== seatCapacity) return false;
-      if (f.key === currentFurnitureKey) return false;
+      const spec = deriveFurnitureSpec(f);
+      const capacity = spec?.capacity ?? f.capacity ?? 1;
+      const slotType = spec?.slotType ?? f.slotType ?? "side";
+      if (seatCapacity === 2) {
+        if (slotType !== "center" || capacity < 2) return false;
+      } else if (slotType === "center" || capacity > 1) {
+        return false;
+      }
       return true;
     });
-  }, [furnitures, allowedFurnitureKeys, placement, currentFurnitureKey]);
+  }, [furnitures, allowedFurnitureKeys, placement]);
 
   useEffect(() => {
     if (!openPanel) return undefined;
@@ -96,24 +107,40 @@ export default function SceneToolbar({
         ))}
       </div>
 
-      {openPanel === "furniture" && swapOptions.length > 0 && (
+      {openPanel === "furniture" && furnitureOptions.length > 0 && (
         <PixelBox
           variant="retro"
           className="live-scene-toolbar-panel is-furniture"
         >
           <div className="live-scene-toolbar-furniture-grid">
-            {swapOptions.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                className="live-scene-toolbar-furniture-item"
-                disabled={changingFurniture}
-                aria-label={f.name ?? f.key}
-                onClick={() => onFurnitureChange?.(f.key)}
-              >
-                <FurnitureThumb furniture={f} />
-              </button>
-            ))}
+            {furnitureOptions.map((f) => {
+              const isCurrent = f.key === currentFurnitureKey;
+              const label = f.name ?? f.key;
+              if (isCurrent) {
+                return (
+                  <div
+                    key={f.key}
+                    className="live-scene-toolbar-furniture-item is-current"
+                    aria-label={`${label} (in use)`}
+                    aria-current="true"
+                  >
+                    <FurnitureThumb furniture={f} />
+                  </div>
+                );
+              }
+              return (
+                <button
+                  key={f.key}
+                  type="button"
+                  className="live-scene-toolbar-furniture-item"
+                  disabled={changingFurniture}
+                  aria-label={label}
+                  onClick={() => onFurnitureChange?.(f.key)}
+                >
+                  <FurnitureThumb furniture={f} />
+                </button>
+              );
+            })}
           </div>
         </PixelBox>
       )}

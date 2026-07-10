@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import "./styles/feed.css";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
@@ -18,6 +19,8 @@ import ProfileSettings from "./components/ProfileSettings";
 import Badges from "./components/Badges";
 import { AddTask, EditTask } from "./components/ManageTask";
 import AvatarStudio from "./components/AvatarStudio";
+import TransformLab from "./components/lab/TransformLab";
+import FurnitureLab from "./components/lab/FurnitureLab";
 
 function ProtectedRoute({ children }) {
   const { currentUser } = useAuth();
@@ -29,6 +32,33 @@ function GuestRoute({ children }) {
   const { currentUser } = useAuth();
   if (currentUser === undefined) return null;
   if (currentUser) return <Navigate to="/" />;
+  return children;
+}
+
+function CatalogAdminRoute({ children }) {
+  const { currentUser, setCurrentUser, refetchCurrentUser } = useAuth();
+  const [gate, setGate] = useState("loading");
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const data = await refetchCurrentUser();
+      if (cancelled) return;
+      if (!data) {
+        setGate("guest");
+        return;
+      }
+      setCurrentUser(data);
+      setGate(data.isCatalogAdmin ? "allowed" : "denied");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refetchCurrentUser, setCurrentUser]);
+
+  if (gate === "loading") return null;
+  if (gate === "guest" || !currentUser) return <Navigate to="/login" />;
+  if (gate === "denied") return <Navigate to="/" replace />;
   return children;
 }
 
@@ -190,6 +220,26 @@ function App() {
                       <AvatarStudio />
                     </Layout>
                   </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/lab/transform"
+                element={
+                  <CatalogAdminRoute>
+                    <Layout>
+                      <TransformLab />
+                    </Layout>
+                  </CatalogAdminRoute>
+                }
+              />
+              <Route
+                path="/lab/furniture"
+                element={
+                  <CatalogAdminRoute>
+                    <Layout>
+                      <FurnitureLab />
+                    </Layout>
+                  </CatalogAdminRoute>
                 }
               />
             </Routes>

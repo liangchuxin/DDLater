@@ -26,6 +26,7 @@ import {
   buildLayoutFromRoom,
   sideCenterX,
 } from "./live/liveUtils";
+import { normalizeDeskLayout, getDeskSeat } from "./live/furniture/normalizeDeskLayout";
 import { useRoomSocket, useSocketEvent } from "../hooks/useSocket";
 import PushOutLoader from "./PushOutLoader";
 import { useConfirm } from "./ConfirmModal";
@@ -38,6 +39,7 @@ const SWAP_EPHEMERAL_EVENTS = new Set([
   "seat_swap_declined",
   "seat_swap_expired",
   "seat_swap_accepted",
+  "seat_change",
 ]);
 
 export default function Live() {
@@ -75,6 +77,7 @@ export default function Live() {
 
   // Scene data
   const [furnitures, setFurnitures] = useState([]);
+  const [ownedFurnitureKeys, setOwnedFurnitureKeys] = useState([]);
   const [canvasSize, setCanvasSize] = useState({ w: 0, h: 0 });
   const sceneRef = useRef(null);
   const seatMigrateRef = useRef(false);
@@ -104,10 +107,17 @@ export default function Live() {
       .then((r) => r.json())
       .then(setFurnitures)
       .catch(() => setFurnitures([]));
+    fetch(`${API}/api/me/furniture`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => setOwnedFurnitureKeys(data.keys ?? []))
+      .catch(() => setOwnedFurnitureKeys([]));
   }, []);
 
-  // Fetch: room data.
-  // Extracted so socket events and approve/reject can reuse.
+  const refetchFurnitures = useCallback(async () => {
+    const r = await fetch(`${API}/api/furnitures`, { credentials: "include" });
+    if (r.ok) setFurnitures(await r.json());
+  }, []);
+
   const refetchRoom = useCallback(async () => {
     const r = await fetch(`${API}/api/rooms/${roomUid}`, {
       credentials: "include",
@@ -123,7 +133,10 @@ export default function Live() {
     const r = await fetch(`${API}/api/rooms/${roomUid}/events?limit=50`, {
       credentials: "include",
     });
-    if (r.ok) setEvents(await r.json());
+    if (r.ok) {
+      const data = await r.json();
+      setEvents(data.filter((ev) => ev.type !== "seat_change"));
+    }
   }, [roomUid]);
 
   useEffect(() => {
@@ -211,6 +224,12 @@ export default function Live() {
             .catch(() => {});
         }
 
+        if (event.type === "seat_change") {
+          refetchRoom()
+            .then(setRoom)
+            .catch(() => {});
+        }
+
         return;
       }
 
@@ -235,7 +254,6 @@ export default function Live() {
         "task_progress",
         "join_request", // pendingMembers changed
         "join_rejected", // pendingMembers changed; without refetch other admins' buttons won't disappear
-        "seat_change",
       ].includes(event.type);
       if (needsRefetch)
         refetchRoom()
@@ -466,10 +484,25 @@ export default function Live() {
     return () => obs.disconnect();
   }, [self, room]);
 
-  // Seat assignment comes from server-persisted room.members[].seat (stable across refresh).
+  // Keys the current user may pick in the furniture toolbar (owned ∩ room whitelist).
   const allowedFurnitureKeys = useMemo(() => {
-    if (!room) return [];
-    if (room.furnitures?.length > 0) return room.furnitures;
+    if (!room || ownedFurnitureKeys.length === 0) return [];
+    if (room.furnitures?.length > 0) {
+      const roomSet = new Set(room.furnitures);
+      return ownedFurnitureKeys.filter((key) => roomSet.has(key));
+    }
+    return ownedFurnitureKeys;
+  }, [room, ownedFurnitureKeys]);
+
+  // Keys valid for rendering anyone's seat in the scene (catalog ∩ room whitelist).
+  const sceneFurnitureKeys = useMemo(() => {
+    if (!room || !furnitures.length) return [];
+    if (room.furnitures?.length > 0) {
+      const roomSet = new Set(room.furnitures);
+      return furnitures
+        .filter((f) => roomSet.has(f.key))
+        .map((f) => f.key);
+    }
     return furnitures.map((f) => f.key);
   }, [room, furnitures]);
 
@@ -501,9 +534,9 @@ export default function Live() {
       allMembersForScene,
       furnitures,
       ownerId,
-      allowedFurnitureKeys,
+      sceneFurnitureKeys,
     );
-  }, [room, furnitures, self, allMembersForScene, allowedFurnitureKeys]);
+  }, [room, furnitures, self, allMembersForScene, sceneFurnitureKeys]);
 
   // Focus camera on selection change
   useEffect(() => {
@@ -523,12 +556,16 @@ export default function Live() {
       const seat = layout.find((s) => s.userId === targetUserId);
       if (seat) {
         if (seat.position === "center") {
-          const deskLayout =
-            furnitures.find((f) => f.key === "desk")?.layout ??
-            seat.furniture.layout;
+          const deskLayout = normalizeDeskLayout(
+            seat.furniture.layout,
+            seat.furniture.capacity ?? 2,
+          );
           const halfGap = deskLayout.charHalfGap * k;
+          const seatCfg = getDeskSeat(deskLayout, seat.slotIndex);
           targetCanvasX =
-            canvasSize.w / 2 + (seat.slotIndex === 0 ? -halfGap : halfGap);
+            canvasSize.w / 2 +
+            (seat.slotIndex === 0 ? -halfGap : halfGap) +
+            seatCfg.charOffsetX * k;
         } else {
           const sideInset = seat.furniture.layout.sideInset * k;
           targetCanvasX = sideCenterX(
@@ -717,8 +754,12 @@ export default function Live() {
         body: JSON.stringify({ furnitureKey }),
       });
       if (r.ok) {
+        await refetchFurnitures();
         const fresh = await refetchRoom();
         setRoom(fresh);
+      } else {
+        const data = await r.json().catch(() => ({}));
+        alert(data.error || "Could not change furniture.");
       }
     } finally {
       setChangingFurniture(false);
