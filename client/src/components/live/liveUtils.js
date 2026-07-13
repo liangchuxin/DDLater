@@ -167,3 +167,26 @@ export function buildLayoutFromRoom(
   }
   return layout;
 }
+
+function roomMemberUserId(member) {
+  return String(member.user?._id ?? member.user);
+}
+
+/** Update member seat furniture in room state (no full refetch). */
+export function applySeatFurnitureChange(room, actorUserId, furnitureKey, centerSync) {
+  if (!room?.members?.length) return room;
+  const actorId = String(actorUserId);
+  const members = room.members.map((m) => {
+    const placement = m.seat?.placement;
+    const isCenter = placement?.startsWith("desk-");
+    const isActor = roomMemberUserId(m) === actorId;
+    if (centerSync && isCenter) {
+      return { ...m, seat: { ...m.seat, furnitureKey } };
+    }
+    if (isActor) {
+      return { ...m, seat: { ...m.seat, furnitureKey } };
+    }
+    return m;
+  });
+  return { ...room, members };
+}

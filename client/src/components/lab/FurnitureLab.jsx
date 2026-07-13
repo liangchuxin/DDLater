@@ -16,9 +16,7 @@ import { buildLabPreviewLayout } from "./furnitureLabPreview";
 import {
   clearEditDraft,
   layoutsEqual,
-  loadEditDraft,
   migrateLabStorage,
-  saveEditDraft,
 } from "./furnitureLabStorage";
 import FurnitureCreateWizard from "./FurnitureCreateWizard";
 import LayoutTunePanel from "./LayoutTunePanel";
@@ -123,15 +121,9 @@ export default function FurnitureLab() {
     if (mode !== "edit") return;
     const f = furnitures.find((item) => item.key === selectedKey);
     if (!f) return;
-    const local = loadEditDraft(selectedKey);
-    const sourceLayout = local?.layout ?? f.layout;
-    setDraftLayout(cloneLayout(layoutForEditing(f, sourceLayout)));
+    setDraftLayout(cloneLayout(layoutForEditing(f)));
     setPreviewRoomContext(f.zSlot === "char-middle");
-    if (local?.layout) {
-      setStatus("Restored unsaved local edits.");
-    } else {
-      setStatus("");
-    }
+    setStatus("");
   }, [selectedKey, mode, furnitures]);
 
   const serverLayout = useMemo(
@@ -146,15 +138,6 @@ export default function FurnitureLab() {
     }
     return layoutForEditing(selected, draftLayout);
   }, [selected, draftLayout, mode]);
-
-  useEffect(() => {
-    if (mode !== "edit" || !selectedKey || !selected || !serverLayout) return;
-    if (layoutsEqual(canonicalDraftLayout, serverLayout)) {
-      clearEditDraft(selectedKey);
-      return;
-    }
-    saveEditDraft(selectedKey, canonicalDraftLayout);
-  }, [canonicalDraftLayout, selectedKey, selected, serverLayout, mode]);
 
   const hasUnsavedEdits =
     mode === "edit" &&
@@ -309,10 +292,10 @@ export default function FurnitureLab() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setFurnitures((prev) =>
-        prev.map((f) => (f.key === selectedKey ? { ...f, layout: data.layout } : f)),
+        prev.map((f) => (f.key === selectedKey ? { ...f, ...data, layout: data.layout } : f)),
       );
       clearEditDraft(selectedKey);
-      setStatus("Uploaded to server.");
+      setStatus("Saved to database.");
     } catch (err) {
       setStatus(err.message || "Save failed.");
     }
@@ -424,7 +407,9 @@ export default function FurnitureLab() {
           <p className="fl-kicker">Dev Lab</p>
           <h1 className="fl-title">Furniture Lab</h1>
           <p className="fl-desc">
-            Tune layout locally in the browser; nothing hits the server until you save.
+            Layout and seat type live in MongoDB. Edit here, then Save — or update{" "}
+            <code>scripts/furniture-catalog.json</code> and run{" "}
+            <code>node scripts/sync-furniture-catalog.mjs</code>.
             Ref canvas {CANVAS_REF_W}×{CANVAS_REF_H}px.
           </p>
         </div>

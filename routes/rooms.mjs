@@ -512,7 +512,12 @@ router.patch('/:id/member/seat', async (req, res) => {
   });
   broadcast(req, room, ev);
 
-  return res.json({ message: 'Seat updated.', seat: member.seat });
+  return res.json({
+    message: 'Seat updated.',
+    seat: member.seat,
+    furnitureKey,
+    centerSync: isCenterFurniture,
+  });
 });
 
 // POST /api/rooms/:id/seat/swap/request — invite another member to swap seats (ephemeral, not history)

@@ -1,0 +1,277 @@
+[
+  {
+    "key": "armchair",
+    "name": "Armchair",
+    "capacity": 1,
+    "layers": 2,
+    "zSlot": "char-middle",
+    "renderTemplate": null,
+    "slotType": "side",
+    "layout": {
+      "bottom": -40,
+      "sideInset": 360,
+      "furnitureW": 240,
+      "furnitureH": 220,
+      "furnitureLiftY": 80,
+      "charOffsetX": 0,
+      "charOffsetY": 0,
+      "charRotation": 0,
+      "charAnchor": "top",
+      "charSlotW": 165
+    },
+    "imageKeys": [
+      "armchair_bottom.png",
+      "armchair_top.png"
+    ],
+    "isDefault": false
+  },
+  {
+    "key": "bean_bag",
+    "name": "Bean Bag",
+    "capacity": 1,
+    "layers": 1,
+    "zSlot": "char-back",
+    "layout": {
+      "bottom": -20,
+      "sideInset": 260,
+      "furnitureW": 260,
+      "furnitureH": 200,
+      "furnitureLiftY": 20,
+      "charOffsetX": 62,
+      "charRotation": -29,
+      "charAlign": "offset"
+    },
+    "imageKeys": [
+      "bean_bag.png"
+    ],
+    "isDefault": false,
+    "slotType": "side"
+  },
+  {
+    "key": "bed",
+    "name": "Loft Bed",
+    "capacity": 1,
+    "layers": 2,
+    "zSlot": "char-middle",
+    "layout": {
+      "charOffsetX": 50,
+      "charRotation": -90,
+      "bottom": -40,
+      "sideInset": 360,
+      "charOffsetY": 0,
+      "furnitureW": 320,
+      "furnitureH": 255,
+      "furnitureLiftY": 100,
+      "charSlotW": 165
+    },
+    "imageKeys": [
+      "bed_bottom.png",
+      "bed_top.png"
+    ],
+    "isDefault": false,
+    "slotType": "side"
+  },
+  {
+    "key": "day_bed",
+    "name": "Day Bed",
+    "capacity": 1,
+    "layers": 1,
+    "zSlot": "char-back",
+    "renderTemplate": null,
+    "slotType": "side",
+    "layout": {
+      "bottom": -20,
+      "sideInset": 260,
+      "furnitureW": 300,
+      "furnitureH": 200,
+      "furnitureLiftY": 0,
+      "charOffsetX": 0,
+      "charRotation": 0,
+      "charClipRows": 3,
+      "charAlign": "center",
+      "charTopInFurniture": 130
+    },
+    "imageKeys": [
+      "day_bed.png"
+    ],
+    "isDefault": false
+  },
+  {
+    "key": "desk",
+    "name": "Study Desk",
+    "capacity": 2,
+    "layers": 1,
+    "zSlot": "char-front",
+    "layout": {
+      "imgBottom": -91,
+      "imgWidth": 328,
+      "charHalfGap": 90,
+      "charBottom": 47,
+      "charWidth": 161,
+      "seats": [
+        {
+          "charWidth": 161,
+          "charOffsetX": 0,
+          "charOffsetY": 0,
+          "charRotation": 0
+        },
+        {
+          "charWidth": 161,
+          "charOffsetX": 0,
+          "charOffsetY": 0,
+          "charRotation": 0
+        }
+      ]
+    },
+    "imageKeys": [
+      "desk.png"
+    ],
+    "isDefault": true,
+    "slotType": "center"
+  },
+  {
+    "key": "double_sofa",
+    "name": "Double Sofa",
+    "capacity": 2,
+    "layers": 1,
+    "zSlot": "char-front",
+    "renderTemplate": null,
+    "slotType": "center",
+    "layout": {
+      "imgBottom": -75,
+      "imgWidth": 440,
+      "charHalfGap": 95,
+      "charBottom": 52,
+      "charWidth": 161,
+      "seats": [
+        { "charWidth": 161, "charOffsetX": 0, "charOffsetY": 0, "charRotation": 0 },
+        { "charWidth": 161, "charOffsetX": 0, "charOffsetY": 0, "charRotation": 0 }
+      ]
+    },
+    "imageKeys": [
+      "double_sofa.png"
+    ],
+    "isDefault": false
+  },
+  {
+    "key": "folding_chair",
+    "name": "Folding Chair",
+    "capacity": 1,
+    "layers": 1,
+    "zSlot": "char-back",
+    "renderTemplate": null,
+    "slotType": "side",
+    "layout": {
+      "bottom": 0,
+      "sideInset": 260,
+      "furnitureW": 180,
+      "furnitureH": 150,
+      "furnitureLiftY": 0,
+      "charOffsetX": 0,
+      "charRotation": 0,
+      "charClipRows": 3,
+      "charAlign": "center",
+      "charTopInFurniture": 110
+    },
+    "imageKeys": [
+      "folding_chair.png"
+    ],
+    "isDefault": false
+  },
+  {
+    "key": "gaming_chair",
+    "name": "Gaming Chair",
+    "capacity": 1,
+    "layers": 1,
+    "zSlot": "char-back",
+    "renderTemplate": null,
+    "slotType": "side",
+    "layout": {
+      "bottom": 0,
+      "sideInset": 260,
+      "furnitureW": 200,
+      "furnitureH": 190,
+      "furnitureLiftY": 0,
+      "charOffsetX": 0,
+      "charRotation": 0,
+      "charClipRows": 3,
+      "charAlign": "center",
+      "charTopInFurniture": 125
+    },
+    "imageKeys": [
+      "gaming_chair.png"
+    ],
+    "isDefault": false
+  },
+  {
+    "key": "park_bench",
+    "name": "Park Bench",
+    "capacity": 2,
+    "layers": 1,
+    "zSlot": "char-front",
+    "renderTemplate": null,
+    "slotType": "center",
+    "layout": {
+      "imgBottom": -55,
+      "imgWidth": 416,
+      "charHalfGap": 100,
+      "charBottom": 58,
+      "charWidth": 161,
+      "seats": [
+        { "charWidth": 161, "charOffsetX": 0, "charOffsetY": 0, "charRotation": 0 },
+        { "charWidth": 161, "charOffsetX": 0, "charOffsetY": 0, "charRotation": 0 }
+      ]
+    },
+    "imageKeys": [
+      "park_bench.png"
+    ],
+    "isDefault": false
+  },
+  {
+    "key": "sofa",
+    "name": "Sofa",
+    "capacity": 1,
+    "layers": 1,
+    "zSlot": "char-back",
+    "layout": {
+      "bottom": 0,
+      "sideInset": 260,
+      "furnitureW": 220,
+      "furnitureH": 160,
+      "charClipRows": 3,
+      "charAlign": "center",
+      "charTopInFurniture": 140
+    },
+    "imageKeys": [
+      "sofa.png"
+    ],
+    "isDefault": false,
+    "slotType": "side"
+  },
+  {
+    "key": "wardrobe",
+    "name": "Wardrobe",
+    "capacity": 1,
+    "layers": 2,
+    "zSlot": "char-middle",
+    "renderTemplate": null,
+    "slotType": "side",
+    "layout": {
+      "bottom": -40,
+      "sideInset": 360,
+      "furnitureW": 260,
+      "furnitureH": 280,
+      "furnitureLiftY": 90,
+      "charOffsetX": 0,
+      "charOffsetY": 0,
+      "charRotation": 0,
+      "charAnchor": "top",
+      "charSlotW": 165
+    },
+    "imageKeys": [
+      "wardrobe_bottom.png",
+      "wardrobe_top.png"
+    ],
+    "isDefault": false
+  }
+]

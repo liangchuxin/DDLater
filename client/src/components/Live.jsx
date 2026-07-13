@@ -25,6 +25,7 @@ import {
   getDominantColor,
   buildLayoutFromRoom,
   sideCenterX,
+  applySeatFurnitureChange,
 } from "./live/liveUtils";
 import { normalizeDeskLayout, getDeskSeat } from "./live/furniture/normalizeDeskLayout";
 import { useRoomSocket, useSocketEvent } from "../hooks/useSocket";
@@ -225,9 +226,15 @@ export default function Live() {
         }
 
         if (event.type === "seat_change") {
-          refetchRoom()
-            .then(setRoom)
-            .catch(() => {});
+          const actorId = event.actor?._id;
+          const { furnitureKey, centerSync } = event.payload ?? {};
+          if (actorId && furnitureKey) {
+            setRoom((prev) =>
+              prev
+                ? applySeatFurnitureChange(prev, actorId, furnitureKey, centerSync)
+                : prev,
+            );
+          }
         }
 
         return;
@@ -744,8 +751,14 @@ export default function Live() {
   };
 
   const onFurnitureChange = async (furnitureKey) => {
-    if (!room?._id || changingFurniture) return;
+    if (!room?._id || !self?._id || changingFurniture) return;
+    const centerSync =
+      furnitures.find((f) => f.key === furnitureKey)?.slotType === "center";
     setChangingFurniture(true);
+    const prevRoom = room;
+    setRoom((r) =>
+      r ? applySeatFurnitureChange(r, self._id, furnitureKey, centerSync) : r,
+    );
     try {
       const r = await fetch(`${API}/api/rooms/${room._id}/member/seat`, {
         method: "PATCH",
@@ -753,14 +766,28 @@ export default function Live() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ furnitureKey }),
       });
-      if (r.ok) {
-        await refetchFurnitures();
-        const fresh = await refetchRoom();
-        setRoom(fresh);
-      } else {
+      if (!r.ok) {
+        setRoom(prevRoom);
         const data = await r.json().catch(() => ({}));
         alert(data.error || "Could not change furniture.");
+        return;
       }
+      const data = await r.json().catch(() => ({}));
+      if (data.furnitureKey) {
+        setRoom((current) =>
+          current
+            ? applySeatFurnitureChange(
+                current,
+                self._id,
+                data.furnitureKey,
+                data.centerSync,
+              )
+            : current,
+        );
+      }
+    } catch {
+      setRoom(prevRoom);
+      alert("Could not change furniture.");
     } finally {
       setChangingFurniture(false);
     }

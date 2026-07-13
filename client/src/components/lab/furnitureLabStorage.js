@@ -1,6 +1,6 @@
 const CREATE_KEY = "furniture-lab-create-draft";
 const VERSION_KEY = "furniture-lab-storage-version";
-const STORAGE_VERSION = 2;
+const STORAGE_VERSION = 3;
 const editKey = (key) => `furniture-lab-edit-${key}`;
 
 /** Drop stale edit drafts after schema/preview fixes (legacy layout keys, bad slider state). */
