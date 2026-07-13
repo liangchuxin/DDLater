@@ -12,10 +12,6 @@ const TOOLBAR_ITEMS = [
 
 function FurnitureThumb({ furniture }) {
   const keys = furniture.imageKeys ?? [];
-  const isCenter = deriveFurnitureSpec(furniture)?.slotType === "center";
-  const thumbClass = isCenter
-    ? "live-scene-toolbar-furniture-thumb is-center"
-    : "live-scene-toolbar-furniture-thumb";
   if (keys.length === 0) {
     return <span className="live-scene-toolbar-furniture-fallback" />;
   }
@@ -25,7 +21,7 @@ function FurnitureThumb({ furniture }) {
         src={assetUrl(keys[0])}
         alt=""
         draggable={false}
-        className={thumbClass}
+        className="live-scene-toolbar-furniture-thumb"
       />
     );
   }
@@ -37,7 +33,7 @@ function FurnitureThumb({ furniture }) {
           src={assetUrl(key)}
           alt=""
           draggable={false}
-          className={`live-scene-toolbar-furniture-thumb-layer${isCenter ? " is-center" : ""}`}
+          className="live-scene-toolbar-furniture-thumb-layer"
           style={{ zIndex: index + 1 }}
         />
       ))}
